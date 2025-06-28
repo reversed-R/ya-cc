@@ -1,25 +1,27 @@
 #[derive(Clone, Debug)]
 pub enum Token {
-    String(String), // string of remain characters
-    If,             // if
-    While,          // while
-    Int,            // int (reserved word of type)
-    LPare,          // (
-    RPare,          // )
-    LBrace,         // {
-    RBrace,         // }
-    LBracket,       // [
-    RBracket,       // ]
-    Plus,           // +
-    Asterisk,       // *
-    Assign,         // =
-    Equal,          // ==
+    String(String),  // string of remain characters
+    IntLiteral(i64), // int literal
+    If,              // if
+    While,           // while
+    Int,             // int (reserved word of type)
+    LPare,           // (
+    RPare,           // )
+    LBrace,          // {
+    RBrace,          // }
+    LBracket,        // [
+    RBracket,        // ]
+    Plus,            // +
+    Asterisk,        // *
+    Assign,          // =
+    Equal,           // ==
 }
 
 impl Token {
     pub fn pattern(&self) -> String {
         match self {
             Self::String(_) => "".to_string(),
+            Self::IntLiteral(_) => "".to_string(),
             Self::If => "if".to_string(),
             Self::While => "while".to_string(),
             Self::Int => "int".to_string(),

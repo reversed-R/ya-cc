@@ -6,7 +6,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
 
     // delimiter operators
-    // ISSUE: must sort loger by operator chars length
+    // ISSUE: must sort longer by operator chars length
     let delims: Vec<Token> = vec![
         Token::Equal,    // ==
         Token::LPare,    // (
@@ -26,29 +26,32 @@ pub fn tokenize(str: &str) -> Vec<Token> {
     }
 
     // check tokens judged as string but can be judged as a reserved word
-    for i in 0..tokens.len() {
-        match tokens.get(i) {
-            Some(t) => match t {
+    tokens = tokens
+        .into_iter()
+        .map(|t| {
+            match t {
                 Token::String(s) => {
-                    let replacers = vec![Token::If, Token::While, Token::Int];
+                    // check literal expressions
+                    if let Some(t) = try_get_dec_int(&s) {
+                        t
+                    } else if let Some(t) = try_get_prefixed_int(&s) {
+                        t
+                    } else {
+                        let replacers = vec![Token::If, Token::While, Token::Int];
 
-                    for r in replacers {
-                        if &r.pattern() == s {
-                            tokens.remove(i);
-                            tokens.insert(i, r.to_owned());
-                            break;
+                        for r in replacers {
+                            if &r.pattern() == &s {
+                                return r.to_owned();
+                            }
                         }
+
+                        Token::String(s)
                     }
                 }
-                _ => {
-                    continue;
-                }
-            },
-            None => {
-                continue;
+                _ => t,
             }
-        }
-    }
+        })
+        .collect();
 
     tokens
 }
@@ -90,4 +93,35 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
     }
 
     tokens
+}
+
+fn try_get_dec_int(str: &str) -> Option<Token> {
+    if let Ok(dec) = usize::from_str_radix(str, 10) {
+        Some(Token::IntLiteral(dec as i64))
+    } else {
+        None
+    }
+}
+
+fn try_get_prefixed_int(str: &str) -> Option<Token> {
+    if str.len() > 2 && str.chars().nth(0).unwrap() == '0' {
+        let radix = match str.chars().nth(1).unwrap().to_ascii_lowercase() {
+            'b' => 2,
+            'o' => 8,
+            'x' => 16,
+            _ => 0,
+        };
+
+        if radix != 0 {
+            if let Ok(u) = usize::from_str_radix(&str[2..], radix) {
+                Some(Token::IntLiteral(u as i64))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
