@@ -15,8 +15,13 @@ pub enum Token {
     Minus,           // -
     Asterisk,        // *
     Slash,           // /
-    Assign,          // =
+    Lesser,          // <
+    Greater,         // >
+    LesEq,           // <=
+    GrtEq,           // >=
     Equal,           // ==
+    NotEq,           // !=
+    Assign,          // =
 }
 
 impl Token {
@@ -37,8 +42,13 @@ impl Token {
             Self::Minus => "-".to_string(),
             Self::Asterisk => "*".to_string(),
             Self::Slash => "/".to_string(),
-            Self::Assign => "=".to_string(),
+            Self::Lesser => "<".to_string(),
+            Self::Greater => ">".to_string(),
+            Self::LesEq => "<=".to_string(),
+            Self::GrtEq => ">=".to_string(),
             Self::Equal => "==".to_string(),
+            Self::NotEq => "!=".to_string(),
+            Self::Assign => "=".to_string(),
         }
     }
 }
