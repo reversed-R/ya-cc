@@ -14,6 +14,7 @@ pub enum Token {
     Plus,            // +
     Minus,           // -
     Asterisk,        // *
+    Slash,           // /
     Assign,          // =
     Equal,           // ==
 }
@@ -35,6 +36,7 @@ impl Token {
             Self::Plus => "+".to_string(),
             Self::Minus => "-".to_string(),
             Self::Asterisk => "*".to_string(),
+            Self::Slash => "/".to_string(),
             Self::Assign => "=".to_string(),
             Self::Equal => "==".to_string(),
         }

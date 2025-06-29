@@ -56,6 +56,7 @@ pub enum Operator {
     Add, // +
     Sub, // -
     Mul, // *
+    Div, // /
 }
 
 impl ArithmExpr {
@@ -142,6 +143,12 @@ impl Parse for MulExpr {
                         tokens.next();
                         if let Ok(p_right) = Primary::consume(tokens) {
                             mul.push(Operator::Mul, p_right);
+                        }
+                    }
+                    Token::Slash => {
+                        tokens.next();
+                        if let Ok(p_right) = Primary::consume(tokens) {
+                            mul.push(Operator::Div, p_right);
                         }
                     }
                     _ => {

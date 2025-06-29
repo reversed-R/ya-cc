@@ -18,6 +18,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
         Token::Plus,     // +
         Token::Minus,    // -
         Token::Asterisk, // *
+        Token::Slash,    // /
         Token::Assign,   // =
     ];
     let words: Vec<&str> = str.split(&[' ', '\t', '\n'][..]).collect();
