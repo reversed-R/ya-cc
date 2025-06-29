@@ -1,6 +1,6 @@
 pub mod symbols;
 
-use std::slice::Iter;
+use std::{iter::Peekable, slice::Iter};
 
 use crate::lexer::token::Token;
 use symbols::expr::ArithmExpr;
@@ -13,9 +13,9 @@ pub enum ParseError {
 trait Parse {
     type SelfType;
 
-    fn consume(tokens: &mut Iter<'_, Token>) -> Result<Self::SelfType, ParseError>;
+    fn consume(tokens: &mut Peekable<Iter<'_, Token>>) -> Result<Self::SelfType, ParseError>;
 }
 
 pub fn parse(tokens: Vec<Token>) -> Result<ArithmExpr, ParseError> {
-    ArithmExpr::consume(&mut tokens.iter())
+    ArithmExpr::consume(&mut tokens.iter().peekable())
 }
