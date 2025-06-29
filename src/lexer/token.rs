@@ -12,6 +12,7 @@ pub enum Token {
     LBracket,        // [
     RBracket,        // ]
     Plus,            // +
+    Minus,           // -
     Asterisk,        // *
     Assign,          // =
     Equal,           // ==
@@ -32,6 +33,7 @@ impl Token {
             Self::LBracket => "[".to_string(),
             Self::RBracket => "]".to_string(),
             Self::Plus => "+".to_string(),
+            Self::Minus => "-".to_string(),
             Self::Asterisk => "*".to_string(),
             Self::Assign => "=".to_string(),
             Self::Equal => "==".to_string(),

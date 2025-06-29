@@ -28,6 +28,7 @@ pub struct ArithmExpr {
 #[derive(Debug)]
 pub enum Operator {
     Add, // +
+    Sub, // -
     Mul, // *
 }
 
@@ -47,6 +48,24 @@ impl Parse for ArithmExpr {
                         match t {
                             Token::Plus => {
                                 op = Operator::Add;
+                                if let Some(t) = tokens.next() {
+                                    match t {
+                                        Token::IntLiteral(i) => {
+                                            right = *i;
+                                            Ok(Self {
+                                                op,
+                                                left: Box::new(Expr::Literal(Literal::Int(left))),
+                                                right: Box::new(Expr::Literal(Literal::Int(right))),
+                                            })
+                                        }
+                                        _ => Err(ParseError::InvalidToken),
+                                    }
+                                } else {
+                                    Err(ParseError::InvalidToken)
+                                }
+                            }
+                            Token::Minus => {
+                                op = Operator::Sub;
                                 if let Some(t) = tokens.next() {
                                     match t {
                                         Token::IntLiteral(i) => {

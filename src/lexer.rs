@@ -16,6 +16,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
         Token::LBracket, // [
         Token::RBracket, // ]
         Token::Plus,     // +
+        Token::Minus,    // -
         Token::Asterisk, // *
         Token::Assign,   // =
     ];
