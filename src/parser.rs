@@ -3,7 +3,7 @@ pub mod symbols;
 use std::{iter::Peekable, slice::Iter};
 
 use crate::lexer::token::Token;
-use symbols::expr::Expr;
+use symbols::expressions::Expr;
 
 #[derive(Debug)]
 pub enum ParseError {

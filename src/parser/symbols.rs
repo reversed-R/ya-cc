@@ -1,4 +1,4 @@
-pub mod expr;
+pub mod expressions;
 
 pub struct Program {
     pub fns: Vec<Function>,
