@@ -35,7 +35,20 @@ pub struct MulExpr {
 pub struct MulExprNode {
     pub op: Operator, // `op` of the head (index 0th) element does not have meaning, just
     // a placeholder
+    pub right: Unary,
+}
+
+// Unary = ("+" | "-")? Primary
+#[derive(Debug)]
+pub struct Unary {
+    pub op: UnaryOperator,
     pub right: Primary,
+}
+
+#[derive(Debug)]
+pub enum UnaryOperator {
+    Plus,  // +
+    Minus, // -
 }
 
 // Primary = Literal | "(" ArithmExpr ")"
@@ -89,14 +102,14 @@ impl Parse for ArithmExpr {
                 match t {
                     Token::Plus => {
                         tokens.next();
-                        if let Ok(m_right) = MulExpr::consume(tokens) {
-                            arithm.push(Operator::Add, m_right);
+                        if let Ok(right) = MulExpr::consume(tokens) {
+                            arithm.push(Operator::Add, right);
                         }
                     }
                     Token::Minus => {
                         tokens.next();
-                        if let Ok(m_right) = MulExpr::consume(tokens) {
-                            arithm.push(Operator::Sub, m_right);
+                        if let Ok(right) = MulExpr::consume(tokens) {
+                            arithm.push(Operator::Sub, right);
                         }
                     }
                     _ => {
@@ -113,16 +126,16 @@ impl Parse for ArithmExpr {
 }
 
 impl MulExpr {
-    pub fn new(prim: Primary) -> Self {
+    pub fn new(unary: Unary) -> Self {
         Self {
             nodes: vec![MulExprNode {
                 op: Operator::Mul,
-                right: prim,
+                right: unary,
             }],
         }
     }
 
-    fn push(&mut self, op: Operator, right: Primary) {
+    fn push(&mut self, op: Operator, right: Unary) {
         self.nodes.push(MulExprNode { op, right });
     }
 }
@@ -134,21 +147,21 @@ impl Parse for MulExpr {
     ) -> Result<Self::SelfType, ParseError> {
         let mut mul: Self;
 
-        if let Ok(prim) = Primary::consume(tokens) {
-            mul = Self::new(prim);
+        if let Ok(unary) = Unary::consume(tokens) {
+            mul = Self::new(unary);
 
             while let Some(t) = tokens.peek() {
                 match t {
                     Token::Asterisk => {
                         tokens.next();
-                        if let Ok(p_right) = Primary::consume(tokens) {
-                            mul.push(Operator::Mul, p_right);
+                        if let Ok(right) = Unary::consume(tokens) {
+                            mul.push(Operator::Mul, right);
                         }
                     }
                     Token::Slash => {
                         tokens.next();
-                        if let Ok(p_right) = Primary::consume(tokens) {
-                            mul.push(Operator::Div, p_right);
+                        if let Ok(right) = Unary::consume(tokens) {
+                            mul.push(Operator::Div, right);
                         }
                     }
                     _ => {
@@ -185,6 +198,53 @@ impl Parse for Primary {
                     }
                 }
                 _ => Err(ParseError::InvalidToken),
+            }
+        } else {
+            Err(ParseError::InvalidToken)
+        }
+    }
+}
+
+impl Parse for Unary {
+    type SelfType = Self;
+    fn consume(
+        tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
+    ) -> Result<Self::SelfType, ParseError> {
+        // Unary = ("+" | "-")? Primary
+        if let Some(t) = tokens.peek() {
+            match t {
+                Token::Plus => {
+                    tokens.next();
+                    if let Ok(right) = Primary::consume(tokens) {
+                        Ok(Self {
+                            op: UnaryOperator::Plus,
+                            right,
+                        })
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
+                Token::Minus => {
+                    tokens.next();
+                    if let Ok(right) = Primary::consume(tokens) {
+                        Ok(Self {
+                            op: UnaryOperator::Minus,
+                            right,
+                        })
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
+                _ => {
+                    if let Ok(right) = Primary::consume(tokens) {
+                        Ok(Self {
+                            op: UnaryOperator::Plus,
+                            right,
+                        })
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
             }
         } else {
             Err(ParseError::InvalidToken)
