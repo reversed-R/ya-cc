@@ -84,30 +84,24 @@ impl Parse for ArithmExpr {
         if let Ok(mul) = MulExpr::consume(tokens) {
             arithm = Self::new(mul);
 
-            // iterator which points the previous position
-            let mut prev = tokens.clone();
-
-            while let Some(t) = tokens.next() {
-                println!("token: {:?}", t);
+            while let Some(t) = tokens.peek() {
                 match t {
                     Token::Plus => {
+                        tokens.next();
                         if let Ok(m_right) = MulExpr::consume(tokens) {
                             arithm.push(Operator::Add, m_right);
                         }
                     }
                     Token::Minus => {
+                        tokens.next();
                         if let Ok(m_right) = MulExpr::consume(tokens) {
                             arithm.push(Operator::Sub, m_right);
                         }
                     }
                     _ => {
-                        // too advanced by an index, so return the previous index
-                        *tokens = prev;
                         return Ok(arithm);
                     }
                 }
-
-                prev = tokens.clone();
             }
 
             Ok(arithm)
@@ -142,24 +136,18 @@ impl Parse for MulExpr {
         if let Ok(prim) = Primary::consume(tokens) {
             mul = Self::new(prim);
 
-            // iterator which points the previous position
-            let mut prev = tokens.clone();
-
-            while let Some(t) = tokens.next() {
+            while let Some(t) = tokens.peek() {
                 match t {
                     Token::Asterisk => {
+                        tokens.next();
                         if let Ok(p_right) = Primary::consume(tokens) {
                             mul.push(Operator::Mul, p_right);
                         }
                     }
                     _ => {
-                        // too advanced by an index, so return the previous index
-                        *tokens = prev;
                         return Ok(mul);
                     }
                 }
-
-                prev = tokens.clone();
             }
 
             Ok(mul)
