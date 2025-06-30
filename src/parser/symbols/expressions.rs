@@ -1,4 +1,5 @@
 pub mod arithmetic;
+pub mod assignment;
 pub mod equality;
 pub mod multiplication;
 pub mod primary;
@@ -10,10 +11,10 @@ use crate::{
     parser::{Parse, ParseError},
 };
 
-use equality::EqualityExpr;
+use assignment::AssignExpr;
 
 #[derive(Debug)]
-pub struct Expr(EqualityExpr);
+pub struct Expr(AssignExpr);
 
 impl Parse for Expr {
     type SelfType = Self;
@@ -21,8 +22,8 @@ impl Parse for Expr {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Ok(equal) = EqualityExpr::consume(tokens) {
-            Ok(Self(equal))
+        if let Ok(assign) = AssignExpr::consume(tokens) {
+            Ok(Self(assign))
         } else {
             Err(ParseError::InvalidToken)
         }

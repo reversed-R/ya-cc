@@ -1,19 +1,29 @@
+use crate::{
+    lexer::token::Token,
+    parser::{Parse, ParseError},
+};
+use statements::Stmt;
+
 pub mod expressions;
+pub mod statements;
 
+#[derive(Debug)]
 pub struct Program {
-    pub fns: Vec<Function>,
+    pub stmts: Vec<Stmt>,
 }
 
-pub struct Function {
-    pub name: String,
-    pub content: Vec<Stat>,
-}
+impl Parse for Program {
+    type SelfType = Self;
 
-pub enum Stat {
-    ExprStat, // means `expr;` ex) `1 + 3;`, `i = 5;` `do_some();`
+    fn consume(
+        tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
+    ) -> Result<Self::SelfType, ParseError> {
+        let mut prog = Self { stmts: vec![] };
 
-              // If,
-              // While,
-              // Declar, // `int x;`
-              // Init, // `int x = 3;`
+        while let Ok(stmt) = Stmt::consume(tokens) {
+            prog.stmts.push(stmt);
+        }
+
+        Ok(prog)
+    }
 }

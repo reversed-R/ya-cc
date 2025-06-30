@@ -22,6 +22,8 @@ pub enum Token {
     Equal,           // ==
     NotEq,           // !=
     Assign,          // =
+    Colon,           // :
+    SemiColon,       // ;
 }
 
 impl Token {
@@ -49,6 +51,8 @@ impl Token {
             Self::Equal => "==".to_string(),
             Self::NotEq => "!=".to_string(),
             Self::Assign => "=".to_string(),
+            Self::Colon => ":".to_string(),
+            Self::SemiColon => ";".to_string(),
         }
     }
 }

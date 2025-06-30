@@ -8,23 +8,25 @@ pub fn tokenize(str: &str) -> Vec<Token> {
     // delimiter operators
     // ISSUE: must sort longer by operator chars length
     let delims: Vec<Token> = vec![
-        Token::LesEq,    // <=
-        Token::GrtEq,    // >=
-        Token::Equal,    // ==
-        Token::NotEq,    // !=
-        Token::LPare,    // (
-        Token::RPare,    // )
-        Token::LBrace,   // {
-        Token::RBrace,   // }
-        Token::LBracket, // [
-        Token::RBracket, // ]
-        Token::Plus,     // +
-        Token::Minus,    // -
-        Token::Asterisk, // *
-        Token::Slash,    // /
-        Token::Lesser,   // <
-        Token::Greater,  // >
-        Token::Assign,   // =
+        Token::LesEq,     // <=
+        Token::GrtEq,     // >=
+        Token::Equal,     // ==
+        Token::NotEq,     // !=
+        Token::LPare,     // (
+        Token::RPare,     // )
+        Token::LBrace,    // {
+        Token::RBrace,    // }
+        Token::LBracket,  // [
+        Token::RBracket,  // ]
+        Token::Plus,      // +
+        Token::Minus,     // -
+        Token::Asterisk,  // *
+        Token::Slash,     // /
+        Token::Lesser,    // <
+        Token::Greater,   // >
+        Token::Assign,    // =
+        Token::Colon,     // :
+        Token::SemiColon, // ;
     ];
     let words: Vec<&str> = str.split(&[' ', '\t', '\n'][..]).collect();
 
