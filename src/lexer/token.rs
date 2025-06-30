@@ -4,6 +4,7 @@ pub enum Token {
     IntLiteral(i64), // int literal
     If,              // if
     While,           // while
+    Return,          // return
     Int,             // int (reserved word of type)
     LPare,           // (
     RPare,           // )
@@ -33,6 +34,7 @@ impl Token {
             Self::IntLiteral(_) => "".to_string(),
             Self::If => "if".to_string(),
             Self::While => "while".to_string(),
+            Self::Return => "return".to_string(),
             Self::Int => "int".to_string(),
             Self::LPare => "(".to_string(),
             Self::RPare => ")".to_string(),
