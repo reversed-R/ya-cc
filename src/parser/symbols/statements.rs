@@ -1,7 +1,9 @@
+pub mod block;
 pub mod expr;
 pub mod if_stmt;
 pub mod while_stmt;
 
+use block::BlockStmt;
 use expr::ExprStmt;
 use if_stmt::IfStmt;
 use while_stmt::WhileStmt;
@@ -54,23 +56,11 @@ impl Parse for Stmt {
                     }
                 }
                 Token::LBrace => {
-                    tokens.next();
-                    let mut stmts: Vec<Self> = vec![];
-
-                    while let Some(t) = tokens.peek() {
-                        if let Token::RBrace = t {
-                            tokens.next();
-                            return Ok(Self::Block(stmts));
-                        } else {
-                            if let Ok(stmt) = Stmt::consume(tokens) {
-                                stmts.push(stmt);
-                            } else {
-                                return Err(ParseError::InvalidToken);
-                            }
-                        }
+                    if let Ok(block) = BlockStmt::consume(tokens) {
+                        Ok(Self::Block(block.stmts))
+                    } else {
+                        Err(ParseError::InvalidToken)
                     }
-
-                    Err(ParseError::InvalidToken)
                 }
                 _ => {
                     if let Ok(expr) = ExprStmt::consume(tokens) {
