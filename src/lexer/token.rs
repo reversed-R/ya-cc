@@ -1,8 +1,9 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     String(String),  // string of remain characters
     IntLiteral(i64), // int literal
     If,              // if
+    Else,            // else
     While,           // while
     Return,          // return
     Int,             // int (reserved word of type)
@@ -33,6 +34,7 @@ impl Token {
             Self::String(_) => "".to_string(),
             Self::IntLiteral(_) => "".to_string(),
             Self::If => "if".to_string(),
+            Self::Else => "else".to_string(),
             Self::While => "while".to_string(),
             Self::Return => "return".to_string(),
             Self::Int => "int".to_string(),

@@ -46,7 +46,13 @@ pub fn tokenize(str: &str) -> Vec<Token> {
                     } else if let Some(t) = try_get_prefixed_int(&s) {
                         t
                     } else {
-                        let replacers = vec![Token::If, Token::While, Token::Return, Token::Int];
+                        let replacers = vec![
+                            Token::If,
+                            Token::Else,
+                            Token::While,
+                            Token::Return,
+                            Token::Int,
+                        ];
 
                         for r in replacers {
                             if &r.pattern() == &s {

@@ -1,6 +1,8 @@
 pub mod expr;
+pub mod if_stmt;
 
 use expr::ExprStmt;
+use if_stmt::IfStmt;
 
 use crate::{
     lexer::token::Token,
@@ -13,6 +15,7 @@ use super::expressions::Expr;
 pub enum Stmt {
     Expr(Expr),
     Return(Expr),
+    If(Box<IfStmt>),
 }
 
 impl Parse for Stmt {
@@ -23,6 +26,13 @@ impl Parse for Stmt {
     ) -> Result<Self::SelfType, ParseError> {
         if let Some(t) = tokens.peek() {
             match t {
+                Token::If => {
+                    if let Ok(if_stmt) = IfStmt::consume(tokens) {
+                        Ok(Self::If(Box::new(if_stmt)))
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
                 Token::Return => {
                     tokens.next();
                     // same process as expr stmt
