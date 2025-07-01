@@ -1,0 +1,27 @@
+fib(n) {
+  if(n == 1) {
+    return 1;
+  }
+  else{
+    return n * (n - 1);
+  }
+}
+
+while_fib(n) {
+  i = n;
+  result = 1;
+  
+  while(i > 1) {
+    result = result * i;
+    i = i - 1;
+  }
+
+  return result;
+}
+
+main() {
+  n = 9;
+
+  print(fib(n));
+  print(while_fib(n));
+}
