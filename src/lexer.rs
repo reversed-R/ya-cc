@@ -25,6 +25,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
         Token::Lesser,    // <
         Token::Greater,   // >
         Token::Assign,    // =
+        Token::Comma,     // ,
         Token::Colon,     // :
         Token::SemiColon, // ;
     ];
