@@ -1,8 +1,10 @@
 pub mod expr;
 pub mod if_stmt;
+pub mod while_stmt;
 
 use expr::ExprStmt;
 use if_stmt::IfStmt;
+use while_stmt::WhileStmt;
 
 use crate::{
     lexer::token::Token,
@@ -16,6 +18,7 @@ pub enum Stmt {
     Expr(Expr),
     Return(Expr),
     If(Box<IfStmt>),
+    While(Box<WhileStmt>),
 }
 
 impl Parse for Stmt {
@@ -29,6 +32,13 @@ impl Parse for Stmt {
                 Token::If => {
                     if let Ok(if_stmt) = IfStmt::consume(tokens) {
                         Ok(Self::If(Box::new(if_stmt)))
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
+                Token::While => {
+                    if let Ok(while_stmt) = WhileStmt::consume(tokens) {
+                        Ok(Self::While(Box::new(while_stmt)))
                     } else {
                         Err(ParseError::InvalidToken)
                     }
