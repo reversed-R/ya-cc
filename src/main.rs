@@ -1,17 +1,26 @@
 mod lexer;
 mod parser;
 
+use std::{env, fs::File, io::Read};
+
 fn main() {
-    let tokens = lexer::tokenize(
-        "-3- 47+ \n0xF8 *((34 + 0x3) /2) != 55;return 0xa= 3 != 0x42;\n 1 == 3 <4\t ;",
-    );
-    let tokens2 = lexer::tokenize(
-        "13 == (3 + 22) < \n +0b1101/41  *( 22\t - 51)*0x14; return 21< 43 =2; 0b101= 3 = 33= 4 ==54;",
-    );
+    let args: Vec<String> = env::args().collect();
 
-    println!("{:?}", tokens);
-    println!("{:#?}", parser::parse(tokens));
+    if args.len() == 2 {
+        if let Some(file_path) = args.get(1) {
+            let mut f = File::open(file_path).expect(&format!("File Not Found: `{}`", file_path));
 
-    println!("{:?}", tokens2);
-    println!("{:#?}", parser::parse(tokens2));
+            let mut contents = String::new();
+            f.read_to_string(&mut contents)
+                .expect(&format!("Internal Error, Reading File: `{}`", file_path));
+
+            println!("File Content:\n```\n{}\n```", contents);
+
+            let tokens = lexer::tokenize(&contents);
+            println!("{:?}", tokens);
+            println!("{:#?}", parser::parse(tokens));
+        }
+    } else {
+        println!("1 Argument Required: <file-path>")
+    }
 }
