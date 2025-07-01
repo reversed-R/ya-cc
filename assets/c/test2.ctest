@@ -8,7 +8,8 @@ if (0)
   return 21< 43
   =2;
 
-else
+else {
   0b101= 3 = 33= 4 ==54;
+}
 
 while(5   )   1;

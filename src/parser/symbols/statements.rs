@@ -15,6 +15,7 @@ use super::expressions::Expr;
 
 #[derive(Debug)]
 pub enum Stmt {
+    Block(Vec<Stmt>),
     Expr(Expr),
     Return(Expr),
     If(Box<IfStmt>),
@@ -51,6 +52,25 @@ impl Parse for Stmt {
                     } else {
                         Err(ParseError::InvalidToken)
                     }
+                }
+                Token::LBrace => {
+                    tokens.next();
+                    let mut stmts: Vec<Self> = vec![];
+
+                    while let Some(t) = tokens.peek() {
+                        if let Token::RBrace = t {
+                            tokens.next();
+                            return Ok(Self::Block(stmts));
+                        } else {
+                            if let Ok(stmt) = Stmt::consume(tokens) {
+                                stmts.push(stmt);
+                            } else {
+                                return Err(ParseError::InvalidToken);
+                            }
+                        }
+                    }
+
+                    Err(ParseError::InvalidToken)
                 }
                 _ => {
                     if let Ok(expr) = ExprStmt::consume(tokens) {
