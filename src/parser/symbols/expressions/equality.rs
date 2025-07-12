@@ -8,7 +8,7 @@ use super::relational::RelationalExpr;
 // EqualityExpr = RelationalExpr ("==" RelationalExpr | "!=" RelationalExpr)*
 #[derive(Debug)]
 pub struct EqualityExpr {
-    nodes: Vec<EqualityExprNode>,
+    pub nodes: Vec<EqualityExprNode>,
 }
 
 #[derive(Debug)]

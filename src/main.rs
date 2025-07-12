@@ -15,11 +15,15 @@ fn main() {
             f.read_to_string(&mut contents)
                 .expect(&format!("Internal Error, Reading File: `{}`", file_path));
 
-            println!("File Content:\n```\n{}\n```", contents);
+            // println!("File Content:\n```\n{}\n```", contents);
 
             let tokens = lexer::tokenize(&contents);
-            println!("{:?}", tokens);
-            println!("{:#?}", parser::parse(tokens));
+            // println!("{:?}", tokens);
+
+            let prog = parser::parse(tokens).expect("Parse Error");
+            // println!("{:#?}", prog);
+
+            generator::x86_64::generate(prog);
         }
     } else {
         println!("1 Argument Required: <file-path>")

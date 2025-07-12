@@ -8,7 +8,7 @@ use super::equality::EqualityExpr;
 // EqualityExpr = RelationalExpr ("==" RelationalExpr | "!=" RelationalExpr)*
 #[derive(Debug)]
 pub struct AssignExpr {
-    nodes: Vec<AssignExprNode>,
+    pub nodes: Vec<AssignExprNode>,
     // now, only = can be used, but +=, -=, and so on will be used in the future
     // so, node style data structure has a meaning
     // (if only one operator can be used, Vec<Equality> is ok)

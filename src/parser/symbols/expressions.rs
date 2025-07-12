@@ -14,7 +14,7 @@ use crate::{
 use assignment::AssignExpr;
 
 #[derive(Debug)]
-pub struct Expr(AssignExpr);
+pub struct Expr(pub AssignExpr);
 
 impl Parse for Expr {
     type SelfType = Self;

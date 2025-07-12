@@ -8,7 +8,7 @@ use super::unary::Unary;
 // MulExpr = Primary ("*" Primary | "/" Primary)*
 #[derive(Debug)]
 pub struct MulExpr {
-    nodes: Vec<MulExprNode>,
+    pub nodes: Vec<MulExprNode>,
 }
 
 #[derive(Debug)]

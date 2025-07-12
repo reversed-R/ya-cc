@@ -8,7 +8,7 @@ use super::arithmetic::ArithmExpr;
 // RelationalExpr = ArithmExpr ("<" ArithmExpr | ">" ArithmExpr | "<=" ArithmExpr | ">=" ArithmExpr)*
 #[derive(Debug)]
 pub struct RelationalExpr {
-    nodes: Vec<RelationalExprNode>,
+    pub nodes: Vec<RelationalExprNode>,
 }
 
 #[derive(Debug)]

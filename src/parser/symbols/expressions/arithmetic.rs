@@ -8,7 +8,7 @@ use super::multiplication::MulExpr;
 // ArithmExpr = MulExpr ("+" MulExpr | "-" MulExpr)*
 #[derive(Debug)]
 pub struct ArithmExpr {
-    nodes: Vec<ArithmExprNode>,
+    pub nodes: Vec<ArithmExprNode>,
 }
 
 #[derive(Debug)]
