@@ -7,5 +7,7 @@ impl Generate for FnDec {
         for stmt in &self.stmts {
             stmt.generate();
         }
+
+        println!("ret");
     }
 }
