@@ -1,3 +1,4 @@
+mod generator;
 mod lexer;
 mod parser;
 
