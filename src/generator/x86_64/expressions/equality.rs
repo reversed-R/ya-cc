@@ -17,11 +17,19 @@ impl Generate for EqualityExpr {
                         println!("pop rdi");
                         println!("pop rax");
                         println!("cmp rax, rdi");
-                        println!("sete rax");
-                        println!("pop rax");
+                        println!("sete al");
+                        println!("movzb rax, al");
+                        println!("push rax");
                     }
-                    _ => {
-                        // TODO:
+                    EqualityOperator::NotEq => {
+                        equal.right.generate();
+
+                        println!("pop rdi");
+                        println!("pop rax");
+                        println!("cmp rax, rdi");
+                        println!("setne al");
+                        println!("movzb rax, al");
+                        println!("push rax");
                     }
                 }
             }
