@@ -10,7 +10,11 @@ impl Generate for Unary {
                 self.right.generate();
             }
             UnaryOperator::Minus => {
-                // TODO:
+                self.right.generate();
+
+                println!("pop rax");
+                println!("neg rax");
+                println!("push rax");
             }
         }
     }
