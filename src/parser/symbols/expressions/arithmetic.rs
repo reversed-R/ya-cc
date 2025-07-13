@@ -8,13 +8,13 @@ use super::multiplication::MulExpr;
 // ArithmExpr = MulExpr ("+" MulExpr | "-" MulExpr)*
 #[derive(Debug)]
 pub struct ArithmExpr {
-    pub nodes: Vec<ArithmExprNode>,
+    pub left: MulExpr,
+    pub rights: Vec<ArithmExprNode>,
 }
 
 #[derive(Debug)]
 pub struct ArithmExprNode {
-    pub op: ArithmOperator, // `op` of the head (index 0th) element does not have meaning, just
-    // a placeholder
+    pub op: ArithmOperator,
     pub right: MulExpr,
 }
 
@@ -27,15 +27,13 @@ pub enum ArithmOperator {
 impl ArithmExpr {
     pub fn new(mul: MulExpr) -> Self {
         Self {
-            nodes: vec![ArithmExprNode {
-                op: ArithmOperator::Add,
-                right: mul,
-            }],
+            left: mul,
+            rights: vec![],
         }
     }
 
     fn push(&mut self, op: ArithmOperator, right: MulExpr) {
-        self.nodes.push(ArithmExprNode { op, right });
+        self.rights.push(ArithmExprNode { op, right });
     }
 }
 

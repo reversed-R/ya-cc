@@ -8,13 +8,13 @@ use super::arithmetic::ArithmExpr;
 // RelationalExpr = ArithmExpr ("<" ArithmExpr | ">" ArithmExpr | "<=" ArithmExpr | ">=" ArithmExpr)*
 #[derive(Debug)]
 pub struct RelationalExpr {
-    pub nodes: Vec<RelationalExprNode>,
+    pub left: ArithmExpr,
+    pub rights: Vec<RelationalExprNode>,
 }
 
 #[derive(Debug)]
 pub struct RelationalExprNode {
-    pub op: RelationalOperator, // `op` of the head (index 0th) element does not have meaning, just
-    // a placeholder
+    pub op: RelationalOperator,
     pub right: ArithmExpr,
 }
 
@@ -29,15 +29,13 @@ pub enum RelationalOperator {
 impl RelationalExpr {
     pub fn new(arithm: ArithmExpr) -> Self {
         Self {
-            nodes: vec![RelationalExprNode {
-                op: RelationalOperator::Lesser,
-                right: arithm,
-            }],
+            left: arithm,
+            rights: vec![],
         }
     }
 
     fn push(&mut self, op: RelationalOperator, right: ArithmExpr) {
-        self.nodes.push(RelationalExprNode { op, right });
+        self.rights.push(RelationalExprNode { op, right });
     }
 }
 

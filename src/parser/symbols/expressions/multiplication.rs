@@ -8,13 +8,13 @@ use super::unary::Unary;
 // MulExpr = Primary ("*" Primary | "/" Primary)*
 #[derive(Debug)]
 pub struct MulExpr {
-    pub nodes: Vec<MulExprNode>,
+    pub left: Unary,
+    pub rights: Vec<MulExprNode>,
 }
 
 #[derive(Debug)]
 pub struct MulExprNode {
-    pub op: MulOperator, // `op` of the head (index 0th) element does not have meaning, just
-    // a placeholder
+    pub op: MulOperator,
     pub right: Unary,
 }
 
@@ -27,15 +27,13 @@ pub enum MulOperator {
 impl MulExpr {
     pub fn new(unary: Unary) -> Self {
         Self {
-            nodes: vec![MulExprNode {
-                op: MulOperator::Mul,
-                right: unary,
-            }],
+            left: unary,
+            rights: vec![],
         }
     }
 
     fn push(&mut self, op: MulOperator, right: Unary) {
-        self.nodes.push(MulExprNode { op, right });
+        self.rights.push(MulExprNode { op, right });
     }
 }
 

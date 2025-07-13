@@ -8,13 +8,13 @@ use super::relational::RelationalExpr;
 // EqualityExpr = RelationalExpr ("==" RelationalExpr | "!=" RelationalExpr)*
 #[derive(Debug)]
 pub struct EqualityExpr {
-    pub nodes: Vec<EqualityExprNode>,
+    pub left: RelationalExpr,
+    pub rights: Vec<EqualityExprNode>,
 }
 
 #[derive(Debug)]
 pub struct EqualityExprNode {
-    pub op: EqualityOperator, // `op` of the head (index 0th) element does not have meaning, just
-    // a placeholder
+    pub op: EqualityOperator,
     pub right: RelationalExpr,
 }
 
@@ -27,15 +27,13 @@ pub enum EqualityOperator {
 impl EqualityExpr {
     pub fn new(relat: RelationalExpr) -> Self {
         Self {
-            nodes: vec![EqualityExprNode {
-                op: EqualityOperator::Equal,
-                right: relat,
-            }],
+            left: relat,
+            rights: vec![],
         }
     }
 
     fn push(&mut self, op: EqualityOperator, right: RelationalExpr) {
-        self.nodes.push(EqualityExprNode { op, right });
+        self.rights.push(EqualityExprNode { op, right });
     }
 }
 

@@ -8,7 +8,8 @@ use super::equality::EqualityExpr;
 // EqualityExpr = RelationalExpr ("==" RelationalExpr | "!=" RelationalExpr)*
 #[derive(Debug)]
 pub struct AssignExpr {
-    pub nodes: Vec<AssignExprNode>,
+    pub left: EqualityExpr,
+    pub rights: Vec<AssignExprNode>,
     // now, only = can be used, but +=, -=, and so on will be used in the future
     // so, node style data structure has a meaning
     // (if only one operator can be used, Vec<Equality> is ok)
@@ -16,8 +17,7 @@ pub struct AssignExpr {
 
 #[derive(Debug)]
 pub struct AssignExprNode {
-    pub op: AssignOperator, // `op` of the head (index 0th) element does not have meaning, just
-    // a placeholder
+    pub op: AssignOperator,
     pub right: EqualityExpr,
 }
 
@@ -29,15 +29,13 @@ pub enum AssignOperator {
 impl AssignExpr {
     pub fn new(equal: EqualityExpr) -> Self {
         Self {
-            nodes: vec![AssignExprNode {
-                op: AssignOperator::Assign,
-                right: equal,
-            }],
+            left: equal,
+            rights: vec![],
         }
     }
 
     fn push(&mut self, op: AssignOperator, right: EqualityExpr) {
-        self.nodes.push(AssignExprNode { op, right });
+        self.rights.push(AssignExprNode { op, right });
     }
 }
 
