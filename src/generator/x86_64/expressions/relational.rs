@@ -17,11 +17,39 @@ impl Generate for RelationalExpr {
                         println!("pop rdi");
                         println!("pop rax");
                         println!("cmp rax, rdi");
-                        println!("setg rax");
-                        println!("pop rax");
+                        println!("setl al");
+                        println!("movzb rax, al");
+                        println!("push rax");
                     }
-                    _ => {
-                        // TODO:
+                    RelationalOperator::Greater => {
+                        relat.right.generate();
+
+                        println!("pop rdi");
+                        println!("pop rax");
+                        println!("cmp rax, rdi");
+                        println!("setg al");
+                        println!("movzb rax, al");
+                        println!("push rax");
+                    }
+                    RelationalOperator::LesEq => {
+                        relat.right.generate();
+
+                        println!("pop rdi");
+                        println!("pop rax");
+                        println!("cmp rax, rdi");
+                        println!("setle al");
+                        println!("movzb rax, al");
+                        println!("push rax");
+                    }
+                    RelationalOperator::GrtEq => {
+                        relat.right.generate();
+
+                        println!("pop rdi");
+                        println!("pop rax");
+                        println!("cmp rax, rdi");
+                        println!("setge al");
+                        println!("movzb rax, al");
+                        println!("push rax");
                     }
                 }
             }
