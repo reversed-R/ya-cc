@@ -4,8 +4,6 @@ impl Generate for AssignExpr {
     fn generate(&self) {
         // TODO:
         // local variables assignment
-        if let Some(ass) = self.nodes.first() {
-            ass.right.generate();
-        }
+        self.left.generate();
     }
 }
