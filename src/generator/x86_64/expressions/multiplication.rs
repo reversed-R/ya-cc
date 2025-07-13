@@ -16,7 +16,7 @@ impl Generate for MulExpr {
 
                         println!("pop rdi");
                         println!("pop rax");
-                        println!("mul rdi");
+                        println!("imul rax, rdi");
                         println!("push rax");
                     }
                     MulOperator::Div => {
@@ -24,6 +24,7 @@ impl Generate for MulExpr {
 
                         println!("pop rdi");
                         println!("pop rax");
+                        println!("cqo");
                         println!("idiv rdi");
                         println!("push rax");
                     }
