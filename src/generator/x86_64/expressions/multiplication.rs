@@ -21,7 +21,11 @@ impl Generate for MulExpr {
                     }
                     MulOperator::Div => {
                         mul.right.generate();
-                        // TODO:
+
+                        println!("pop rdi");
+                        println!("pop rax");
+                        println!("idiv rdi");
+                        println!("push rax");
                     }
                 }
             }
