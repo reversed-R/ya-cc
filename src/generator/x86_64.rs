@@ -2,6 +2,8 @@ mod expressions;
 mod globals;
 mod statements;
 
+use std::collections::HashMap;
+
 use crate::parser::symbols::Program;
 
 pub fn generate(prog: Program) {
@@ -13,6 +15,6 @@ pub fn generate(prog: Program) {
     }
 }
 
-trait Generate {
-    fn generate(&self);
+trait LocalGenerate {
+    fn generate(&self, locals: &HashMap<String, usize>);
 }

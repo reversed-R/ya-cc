@@ -1,16 +1,16 @@
 use crate::{
-    generator::x86_64::Generate,
+    generator::x86_64::LocalGenerate,
     parser::symbols::expressions::multiplication::{MulExpr, MulOperator},
 };
 
-impl Generate for MulExpr {
-    fn generate(&self) {
-        self.left.generate();
+impl LocalGenerate for MulExpr {
+    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
+        self.left.generate(locals);
 
         for mul in &self.rights {
             match mul.op {
                 MulOperator::Mul => {
-                    mul.right.generate();
+                    mul.right.generate(locals);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -18,7 +18,7 @@ impl Generate for MulExpr {
                     println!("push rax");
                 }
                 MulOperator::Div => {
-                    mul.right.generate();
+                    mul.right.generate(locals);
 
                     println!("pop rdi");
                     println!("pop rax");

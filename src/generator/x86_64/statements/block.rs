@@ -1,5 +1,5 @@
-use crate::{generator::x86_64::Generate, parser::symbols::statements::block::BlockStmt};
+use crate::{generator::x86_64::LocalGenerate, parser::symbols::statements::block::BlockStmt};
 
-impl Generate for BlockStmt {
-    fn generate(&self) {}
+impl LocalGenerate for BlockStmt {
+    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {}
 }

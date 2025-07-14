@@ -1,16 +1,16 @@
 use crate::{
-    generator::x86_64::Generate,
+    generator::x86_64::LocalGenerate,
     parser::symbols::expressions::arithmetic::{ArithmExpr, ArithmOperator},
 };
 
-impl Generate for ArithmExpr {
-    fn generate(&self) {
-        self.left.generate();
+impl LocalGenerate for ArithmExpr {
+    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
+        self.left.generate(locals);
 
         for arithm in &self.rights {
             match arithm.op {
                 ArithmOperator::Add => {
-                    arithm.right.generate();
+                    arithm.right.generate(locals);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -18,7 +18,7 @@ impl Generate for ArithmExpr {
                     println!("push rax");
                 }
                 ArithmOperator::Sub => {
-                    arithm.right.generate();
+                    arithm.right.generate(locals);
 
                     println!("pop rdi");
                     println!("pop rax");

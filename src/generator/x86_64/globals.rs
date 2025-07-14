@@ -1,25 +1,23 @@
 use std::collections::HashMap;
 
 use crate::{
-    generator::x86_64::Generate,
+    generator::x86_64::LocalGenerate,
     parser::symbols::{expressions::primary::Primary, globals::FnDec, statements::Stmt},
 };
 
-impl Generate for FnDec {
-    fn generate(&self) {
+impl FnDec {
+    pub fn generate(&self) {
         let locals = self.list_local_variables();
 
         println!("{}:", self.name);
 
         for stmt in &self.stmts {
-            stmt.generate();
+            stmt.generate(&locals);
         }
 
         println!("ret");
     }
-}
 
-impl FnDec {
     fn list_local_variables(&self) -> HashMap<String, usize> {
         let mut locals: HashMap<String, usize> = HashMap::new();
         const SIZE_OF_VARIABLE: usize = 4;

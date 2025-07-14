@@ -1,5 +1,5 @@
-use crate::{generator::x86_64::Generate, parser::symbols::statements::while_stmt::WhileStmt};
+use crate::{generator::x86_64::LocalGenerate, parser::symbols::statements::while_stmt::WhileStmt};
 
-impl Generate for WhileStmt {
-    fn generate(&self) {}
+impl LocalGenerate for WhileStmt {
+    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {}
 }
