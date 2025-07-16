@@ -10,11 +10,14 @@ impl FnDec {
         let locals = self.list_local_variables();
 
         println!("{}:", self.name);
+        println!("push rbp");
+        println!("mov rbp, rsp");
 
         for stmt in &self.stmts {
             stmt.generate(&locals);
         }
 
+        println!("pop rbp");
         println!("ret");
     }
 
