@@ -38,7 +38,7 @@ impl FnDec {
                 {
                     if let Primary::Identifier(id) = &mul.left.right {
                         if !locals.contains_key(id) {
-                            locals.insert(id.clone(), locals.len() * SIZE_OF_VARIABLE);
+                            locals.insert(id.clone(), (locals.len() + 1) * SIZE_OF_VARIABLE);
                         }
                     }
                 } else {

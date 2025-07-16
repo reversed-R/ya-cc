@@ -12,7 +12,7 @@ pub struct Unary {
     pub right: Primary,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum UnaryOperator {
     Plus,  // +
     Minus, // -
