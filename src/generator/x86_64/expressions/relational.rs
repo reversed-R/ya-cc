@@ -1,16 +1,16 @@
 use crate::{
-    generator::x86_64::LocalGenerate,
+    generator::x86_64::globals::LocalGenerate,
     parser::symbols::expressions::relational::{RelationalExpr, RelationalOperator},
 };
 
 impl LocalGenerate for RelationalExpr {
-    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
-        self.left.generate(locals);
+    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
+        self.left.generate(vars);
 
         for relat in &self.rights {
             match relat.op {
                 RelationalOperator::Lesser => {
-                    relat.right.generate(locals);
+                    relat.right.generate(vars);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -20,7 +20,7 @@ impl LocalGenerate for RelationalExpr {
                     println!("push rax");
                 }
                 RelationalOperator::Greater => {
-                    relat.right.generate(locals);
+                    relat.right.generate(vars);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -30,7 +30,7 @@ impl LocalGenerate for RelationalExpr {
                     println!("push rax");
                 }
                 RelationalOperator::LesEq => {
-                    relat.right.generate(locals);
+                    relat.right.generate(vars);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -40,7 +40,7 @@ impl LocalGenerate for RelationalExpr {
                     println!("push rax");
                 }
                 RelationalOperator::GrtEq => {
-                    relat.right.generate(locals);
+                    relat.right.generate(vars);
 
                     println!("pop rdi");
                     println!("pop rax");

@@ -1,5 +1,7 @@
-use crate::{generator::x86_64::LocalGenerate, parser::symbols::statements::if_stmt::IfStmt};
+use crate::{
+    generator::x86_64::globals::LocalGenerate, parser::symbols::statements::if_stmt::IfStmt,
+};
 
 impl LocalGenerate for IfStmt {
-    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {}
+    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {}
 }

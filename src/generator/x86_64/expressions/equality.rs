@@ -1,16 +1,16 @@
 use crate::{
-    generator::x86_64::LocalGenerate,
+    generator::x86_64::globals::LocalGenerate,
     parser::symbols::expressions::equality::{EqualityExpr, EqualityOperator},
 };
 
 impl LocalGenerate for EqualityExpr {
-    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
-        self.left.generate(locals);
+    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
+        self.left.generate(vars);
 
         for equal in &self.rights {
             match equal.op {
                 EqualityOperator::Equal => {
-                    equal.right.generate(locals);
+                    equal.right.generate(vars);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -20,7 +20,7 @@ impl LocalGenerate for EqualityExpr {
                     println!("push rax");
                 }
                 EqualityOperator::NotEq => {
-                    equal.right.generate(locals);
+                    equal.right.generate(vars);
 
                     println!("pop rdi");
                     println!("pop rax");

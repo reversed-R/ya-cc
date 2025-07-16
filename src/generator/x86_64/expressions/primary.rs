@@ -1,10 +1,10 @@
 use crate::{
-    generator::x86_64::LocalGenerate,
+    generator::x86_64::globals::LocalGenerate,
     parser::symbols::expressions::primary::{Literal, Primary},
 };
 
 impl LocalGenerate for Primary {
-    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
+    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
         match self {
             Self::Literal(lit) => match lit {
                 Literal::Int(i) => {
@@ -17,7 +17,7 @@ impl LocalGenerate for Primary {
             },
             Self::FnCall(f) => {
                 for arg in &f.args {
-                    arg.generate(locals);
+                    arg.generate(vars);
                     // calculated arg value will be pushed
                 }
 

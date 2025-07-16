@@ -1,5 +1,5 @@
 use crate::{
-    generator::x86_64::LocalGenerate,
+    generator::x86_64::globals::LocalGenerate,
     parser::symbols::expressions::{
         assignment::{AssignExpr, AssignExprNode, AssignOperator},
         primary::Primary,
@@ -53,23 +53,23 @@ impl AssignExpr {
 }
 
 impl LocalGenerate for AssignExpr {
-    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
+    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
         if self.rights.is_empty() {
-            self.left.generate(locals);
+            self.left.generate(vars);
         } else {
             let mut last_op: &AssignOperator = &AssignOperator::Assign;
 
             for (i, ass) in self.rights.iter().rev().enumerate() {
                 if i == 0 {
-                    ass.right.generate(locals);
+                    ass.right.generate(vars);
                     last_op = &ass.op;
                 } else if let Some(id) = ass.assignable_variable() {
-                    ass.right.generate(locals);
+                    ass.right.generate(vars);
 
                     println!("pop rdi");
 
-                    if let Some(offset) = locals.get(id) {
-                        last_op.generate(*offset);
+                    if let Some(offset) = vars.offset(id) {
+                        last_op.generate(offset);
                     } else {
                         panic!("Local Variable Not Found");
                     }
@@ -85,8 +85,8 @@ impl LocalGenerate for AssignExpr {
             if let Some(id) = self.assignable_variable() {
                 println!("pop rdi");
 
-                if let Some(offset) = locals.get(id) {
-                    last_op.generate(*offset);
+                if let Some(offset) = vars.offset(id) {
+                    last_op.generate(offset);
                 } else {
                     panic!("Local Variable Not Found");
                 }

@@ -1,8 +1,8 @@
-use crate::{generator::x86_64::LocalGenerate, parser::symbols::expressions::Expr};
+use crate::{generator::x86_64::globals::LocalGenerate, parser::symbols::expressions::Expr};
 
 impl LocalGenerate for Expr {
-    fn generate(&self, locals: &std::collections::HashMap<String, usize>) {
-        self.0.generate(locals);
+    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
+        self.0.generate(vars);
 
         println!("pop rax");
     }
