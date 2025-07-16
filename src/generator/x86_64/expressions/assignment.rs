@@ -30,7 +30,7 @@ impl AssignExprNode {
 }
 
 impl AssignExpr {
-    fn assignable_variable(&self) -> Option<&String> {
+    pub fn assignable_variable(&self) -> Option<&String> {
         let equal = &self.left;
         let relat = &equal.left;
         let arithm = &relat.left;

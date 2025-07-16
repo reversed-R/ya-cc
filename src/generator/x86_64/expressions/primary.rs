@@ -15,6 +15,15 @@ impl LocalGenerate for Primary {
                     // TODO:
                 }
             },
+            Self::FnCall(f) => {
+                for arg in &f.args {
+                    arg.generate(locals);
+                    // calculated arg value will be pushed
+                }
+
+                println!("call {}", f.name);
+                println!("push rax");
+            }
             _ => {
                 // TODO:
             }
