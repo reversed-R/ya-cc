@@ -1,5 +1,7 @@
 main(){
+  a = 0;
   sub(subsub(6), 1);
+  a = 7;
 }
 
 sub(a, b){

@@ -46,11 +46,13 @@ impl FnDec {
         println!("{}:", self.name);
         println!("push rbp");
         println!("mov rbp, rsp");
+        println!("sub rsp, {}", vars.locals.len() * SIZE_OF_VARIABLE);
 
         for stmt in &self.stmts {
             stmt.generate(&mut vars);
         }
 
+        println!("mov rsp, rbp");
         println!("pop rbp");
         println!("ret");
     }
