@@ -4,6 +4,8 @@ mod statements;
 
 use crate::parser::symbols::Program;
 
+pub const ARG_REGS: [&str; 4] = ["rcx", "rdx", "r8", "r9"];
+
 pub fn generate(prog: Program) {
     println!(".intel_syntax noprefix");
     println!(".globl main");

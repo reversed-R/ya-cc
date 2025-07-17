@@ -1,5 +1,5 @@
 use crate::{
-    generator::x86_64::globals::LocalGenerate,
+    generator::x86_64::{globals::LocalGenerate, ARG_REGS},
     parser::symbols::expressions::primary::{Literal, Primary},
 };
 
@@ -16,9 +16,14 @@ impl LocalGenerate for Primary {
                 }
             },
             Self::FnCall(f) => {
-                for arg in &f.args {
+                for (i, arg) in f.args.iter().enumerate() {
                     arg.generate(vars);
-                    // calculated arg value will be pushed
+
+                    if let Some(reg) = ARG_REGS.get(i) {
+                        println!("pop {reg}");
+                    } else {
+                        panic!("Too Many Args for Function Call");
+                    }
                 }
 
                 println!("call {}", f.name);

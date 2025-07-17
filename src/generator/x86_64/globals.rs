@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::parser::symbols::{globals::FnDec, statements::Stmt};
+use crate::{
+    generator::x86_64::ARG_REGS,
+    parser::symbols::{globals::FnDec, statements::Stmt},
+};
 
 pub trait LocalGenerate {
     fn generate(&self, vars: &mut Vars);
@@ -9,58 +12,20 @@ pub trait LocalGenerate {
 const SIZE_OF_VARIABLE: usize = 4;
 
 pub struct Vars {
-    args: HashMap<String, usize>,
     locals: HashMap<String, usize>,
 }
 
 impl Vars {
-    pub fn new(args: &[String], locals: HashMap<String, usize>) -> Self {
-        let mut args_map = HashMap::<String, usize>::new();
+    pub fn new(args: &[String], stmts: &[Stmt]) -> Self {
+        let mut locals = HashMap::<String, usize>::new();
 
-        for (i, arg) in args.iter().enumerate() {
-            if !args_map.contains_key(arg) {
-                args_map.insert(arg.clone(), (args_map.len() - i) * SIZE_OF_VARIABLE);
+        for arg in args {
+            if !locals.contains_key(arg) {
+                locals.insert(arg.clone(), (locals.len() + 1) * SIZE_OF_VARIABLE);
             }
         }
 
-        Self {
-            args: args_map,
-            locals,
-        }
-    }
-
-    pub fn offset(&self, id: &String) -> Option<usize> {
-        if let Some(offset) = self.locals.get(id) {
-            Some(*offset)
-        } else {
-            self.args.get(id).cloned()
-        }
-    }
-}
-
-impl FnDec {
-    pub fn generate(&self) {
-        let locals = self.list_local_variables();
-        let mut vars = Vars::new(&self.args, locals);
-
-        println!("{}:", self.name);
-        println!("push rbp");
-        println!("mov rbp, rsp");
-        println!("sub rsp, {}", vars.locals.len() * SIZE_OF_VARIABLE);
-
-        for stmt in &self.stmts {
-            stmt.generate(&mut vars);
-        }
-
-        println!("mov rsp, rbp");
-        println!("pop rbp");
-        println!("ret");
-    }
-
-    fn list_local_variables(&self) -> HashMap<String, usize> {
-        let mut locals: HashMap<String, usize> = HashMap::new();
-
-        for stmt in &self.stmts {
+        for stmt in stmts {
             if let Stmt::Expr(expr) = stmt {
                 let ass = &expr.0;
 
@@ -72,6 +37,41 @@ impl FnDec {
             }
         }
 
-        locals
+        Self { locals }
+    }
+
+    pub fn offset(&self, id: &String) -> Option<usize> {
+        self.locals.get(id).cloned()
+    }
+}
+
+impl FnDec {
+    pub fn generate(&self) {
+        let mut vars = Vars::new(&self.args, &self.stmts);
+
+        println!("{}:", self.name);
+        println!("push rbp");
+        println!("mov rbp, rsp");
+        println!("sub rsp, {}", vars.locals.len() * SIZE_OF_VARIABLE);
+
+        for (i, arg) in self.args.iter().enumerate() {
+            if let Some(reg) = ARG_REGS.get(i) {
+                println!(
+                    "mov [rbp - {}], {}",
+                    vars.offset(arg).expect("Arg Not Found"),
+                    reg
+                );
+            } else {
+                panic!("Too Many Args for Function Call");
+            }
+        }
+
+        for stmt in &self.stmts {
+            stmt.generate(&mut vars);
+        }
+
+        println!("mov rsp, rbp");
+        println!("pop rbp");
+        println!("ret");
     }
 }

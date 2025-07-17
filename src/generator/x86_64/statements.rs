@@ -1,5 +1,4 @@
 pub mod block;
-pub mod expr;
 pub mod if_stmt;
 pub mod while_stmt;
 
@@ -15,9 +14,16 @@ impl LocalGenerate for Stmt {
             }
             Self::Expr(expr) => {
                 expr.generate(vars);
+
+                println!("pop rax");
             }
-            Self::Return(ret) => {
-                ret.generate(vars);
+            Self::Return(expr) => {
+                expr.generate(vars);
+
+                println!("pop rax");
+                println!("mov rsp, rbp");
+                println!("pop rbp");
+                println!("ret");
             }
             Self::If(if_stmt) => {
                 if_stmt.generate(vars);
