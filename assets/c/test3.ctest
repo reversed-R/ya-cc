@@ -9,5 +9,5 @@ sub(a, b){
 }
 
 subsub(a){
-  0;
+  return 0;
 }
