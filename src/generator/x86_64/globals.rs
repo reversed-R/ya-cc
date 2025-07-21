@@ -51,9 +51,7 @@ impl FnDec {
 
         println!("{}:", self.name);
         println!("push rbp");
-        if self.name == "main" {
-            println!("mov rbp, rsp");
-        }
+        println!("mov rbp, rsp");
         println!("and rsp, -16");
         println!("sub rsp, {}", vars.locals.len() * SIZE_OF_VARIABLE);
 
@@ -73,7 +71,13 @@ impl FnDec {
             stmt.generate(&mut vars);
         }
 
-        println!("leave");
-        println!("ret");
+        if self.name == "main" {
+            println!("leave");
+            println!("ret");
+        } else {
+            println!("mov rsp, rbp");
+            println!("pop rbp");
+            println!("ret");
+        }
     }
 }

@@ -21,7 +21,8 @@ impl LocalGenerate for Stmt {
                 expr.generate(vars);
 
                 println!("pop rax");
-                println!("leave");
+                println!("mov rsp, rbp");
+                println!("pop rbp");
                 println!("ret");
             }
             Self::If(if_stmt) => {
