@@ -1,0 +1,7 @@
+main(){
+  return sub(1);
+}
+
+sub(a){
+  return 4;
+}
