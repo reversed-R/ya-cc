@@ -1,5 +1,5 @@
 main(){
-  return fact(4);
+  return fact2(5);
 }
 
 fact(n){
@@ -9,4 +9,16 @@ fact(n){
   else {
     return 1;
   }
+}
+
+fact2(n){
+  i = n;
+  res = 1;
+
+  while (i > 1) {
+    res = res * i;
+    i = i - 1;
+  }
+
+  return res;
 }

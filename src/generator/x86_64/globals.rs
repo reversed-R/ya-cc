@@ -18,7 +18,7 @@ pub struct Env {
 }
 
 impl Env {
-    pub fn new(args: &[String], stmts: &[Stmt]) -> Self {
+    pub fn new(args: &[String], stmts: &[Stmt], label_count: usize) -> Self {
         let mut locals = HashMap::<String, usize>::new();
 
         for arg in args {
@@ -41,7 +41,7 @@ impl Env {
 
         Self {
             locals,
-            label_count: 0,
+            label_count,
         }
     }
 
@@ -57,8 +57,8 @@ impl Env {
 }
 
 impl FnDec {
-    pub fn generate(&self) {
-        let mut env = Env::new(&self.args, &self.stmts);
+    pub fn generate(&self, label_count: usize) -> usize {
+        let mut env = Env::new(&self.args, &self.stmts, label_count);
 
         println!("{}:", self.name);
         println!("push rbp");
@@ -89,5 +89,7 @@ impl FnDec {
             println!("pop rbp");
             println!("ret");
         }
+
+        env.label_count
     }
 }
