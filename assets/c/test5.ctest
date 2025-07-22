@@ -1,7 +1,12 @@
 main(){
-  return sub(3);
+  return fact(4);
 }
 
-sub(a){
-  return a * a;
+fact(n){
+  if (n > 1) {
+    return n * fact(n - 1);
+  }
+  else {
+    return 1;
+  }
 }
