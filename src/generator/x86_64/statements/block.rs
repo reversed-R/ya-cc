@@ -3,5 +3,9 @@ use crate::{
 };
 
 impl LocalGenerate for BlockStmt {
-    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {}
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        for stmt in &self.stmts {
+            stmt.generate(env);
+        }
+    }
 }

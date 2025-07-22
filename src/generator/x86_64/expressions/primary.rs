@@ -15,6 +15,12 @@ impl LocalGenerate for Primary {
                     // TODO:
                 }
             },
+            Self::Identifier(id) => {
+                println!(
+                    "push [rbp - {}]",
+                    env.offset(id).expect("Variable Not Found"),
+                );
+            }
             Self::FnCall(f) => {
                 for (i, arg) in f.args.iter().enumerate() {
                     arg.generate(env);

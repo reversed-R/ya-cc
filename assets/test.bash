@@ -7,5 +7,5 @@ FILE=$1
 #   cargo run --manifest-path ../Cargo.toml $FILE
 # done
 
-cargo run --manifest-path ../Cargo.toml $FILE > $FILE.s
+cargo run --manifest-path ../Cargo.toml $FILE > $FILE.s && \
 gcc $FILE.s -o a.out && ./a.out

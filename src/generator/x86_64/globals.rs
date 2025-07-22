@@ -11,6 +11,7 @@ pub trait LocalGenerate {
 
 const SIZE_OF_VARIABLE: usize = 8;
 
+#[derive(Debug)]
 pub struct Env {
     locals: HashMap<String, usize>,
     label_count: usize,
