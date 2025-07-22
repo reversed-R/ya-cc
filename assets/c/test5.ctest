@@ -1,5 +1,10 @@
 main(){
-  return sub(1);
+  if(sub(1) > 0) {
+    return 1;
+  }
+  else {
+    return -1;
+  }
 }
 
 sub(a){
