@@ -4,13 +4,13 @@ use crate::{
 };
 
 impl LocalGenerate for EqualityExpr {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
-        self.left.generate(vars);
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        self.left.generate(env);
 
         for equal in &self.rights {
             match equal.op {
                 EqualityOperator::Equal => {
-                    equal.right.generate(vars);
+                    equal.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -20,7 +20,7 @@ impl LocalGenerate for EqualityExpr {
                     println!("push rax");
                 }
                 EqualityOperator::NotEq => {
-                    equal.right.generate(vars);
+                    equal.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");

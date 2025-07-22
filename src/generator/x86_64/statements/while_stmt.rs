@@ -3,5 +3,5 @@ use crate::{
 };
 
 impl LocalGenerate for WhileStmt {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {}
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {}
 }

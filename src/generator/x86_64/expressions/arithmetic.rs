@@ -4,13 +4,13 @@ use crate::{
 };
 
 impl LocalGenerate for ArithmExpr {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
-        self.left.generate(vars);
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        self.left.generate(env);
 
         for arithm in &self.rights {
             match arithm.op {
                 ArithmOperator::Add => {
-                    arithm.right.generate(vars);
+                    arithm.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -18,7 +18,7 @@ impl LocalGenerate for ArithmExpr {
                     println!("push rax");
                 }
                 ArithmOperator::Sub => {
-                    arithm.right.generate(vars);
+                    arithm.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");

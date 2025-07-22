@@ -4,13 +4,13 @@ use crate::{
 };
 
 impl LocalGenerate for RelationalExpr {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
-        self.left.generate(vars);
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        self.left.generate(env);
 
         for relat in &self.rights {
             match relat.op {
                 RelationalOperator::Lesser => {
-                    relat.right.generate(vars);
+                    relat.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -20,7 +20,7 @@ impl LocalGenerate for RelationalExpr {
                     println!("push rax");
                 }
                 RelationalOperator::Greater => {
-                    relat.right.generate(vars);
+                    relat.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -30,7 +30,7 @@ impl LocalGenerate for RelationalExpr {
                     println!("push rax");
                 }
                 RelationalOperator::LesEq => {
-                    relat.right.generate(vars);
+                    relat.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -40,7 +40,7 @@ impl LocalGenerate for RelationalExpr {
                     println!("push rax");
                 }
                 RelationalOperator::GrtEq => {
-                    relat.right.generate(vars);
+                    relat.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");

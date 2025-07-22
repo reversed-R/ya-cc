@@ -3,29 +3,31 @@ use crate::{
 };
 
 impl LocalGenerate for IfStmt {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
-        self.cond.generate(vars);
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        let label_count = env.increment_label();
+
+        self.cond.generate(env);
 
         println!("pop rax");
         println!("cmp rax, 0");
 
         match &self.els {
             Some(els) => {
-                println!("je .Lelse000");
+                println!("je .Lelse{label_count}");
 
-                self.then.generate(vars);
-                println!("jmp .Lend000");
+                self.then.generate(env);
+                println!("jmp .Lend{label_count}");
 
-                println!(".Lelse000:");
-                els.generate(vars);
+                println!(".Lelse{label_count}:");
+                els.generate(env);
             }
             None => {
-                println!("je .Lend000");
+                println!("je .Lend{label_count}");
 
-                self.then.generate(vars);
+                self.then.generate(env);
             }
         }
 
-        println!(".Lend000:");
+        println!(".Lend{label_count}:");
     }
 }

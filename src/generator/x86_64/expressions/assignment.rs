@@ -53,22 +53,22 @@ impl AssignExpr {
 }
 
 impl LocalGenerate for AssignExpr {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
         if self.rights.is_empty() {
-            self.left.generate(vars);
+            self.left.generate(env);
         } else {
             let mut last_op: &AssignOperator = &AssignOperator::Assign;
 
             for (i, ass) in self.rights.iter().rev().enumerate() {
                 if i == 0 {
-                    ass.right.generate(vars);
+                    ass.right.generate(env);
                     last_op = &ass.op;
                 } else if let Some(id) = ass.assignable_variable() {
-                    ass.right.generate(vars);
+                    ass.right.generate(env);
 
                     println!("pop rdi");
 
-                    if let Some(offset) = vars.offset(id) {
+                    if let Some(offset) = env.offset(id) {
                         last_op.generate(offset);
                     } else {
                         panic!("Local Variable Not Found");
@@ -85,7 +85,7 @@ impl LocalGenerate for AssignExpr {
             if let Some(id) = self.assignable_variable() {
                 println!("pop rdi");
 
-                if let Some(offset) = vars.offset(id) {
+                if let Some(offset) = env.offset(id) {
                     last_op.generate(offset);
                 } else {
                     panic!("Local Variable Not Found");

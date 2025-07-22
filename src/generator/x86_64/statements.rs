@@ -5,20 +5,20 @@ pub mod while_stmt;
 use crate::{generator::x86_64::globals::LocalGenerate, parser::symbols::statements::Stmt};
 
 impl LocalGenerate for Stmt {
-    fn generate(&self, vars: &mut super::globals::Vars) {
+    fn generate(&self, env: &mut super::globals::Env) {
         match self {
             Self::Block(stmts) => {
                 for stmt in stmts {
-                    stmt.generate(vars);
+                    stmt.generate(env);
                 }
             }
             Self::Expr(expr) => {
-                expr.generate(vars);
+                expr.generate(env);
 
                 println!("pop rax");
             }
             Self::Return(expr) => {
-                expr.generate(vars);
+                expr.generate(env);
 
                 println!("pop rax");
                 println!("mov rsp, rbp");
@@ -26,10 +26,10 @@ impl LocalGenerate for Stmt {
                 println!("ret");
             }
             Self::If(if_stmt) => {
-                if_stmt.generate(vars);
+                if_stmt.generate(env);
             }
             Self::While(while_stmt) => {
-                while_stmt.generate(vars);
+                while_stmt.generate(env);
             }
         }
     }

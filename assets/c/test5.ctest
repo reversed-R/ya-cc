@@ -1,6 +1,16 @@
 main(){
-  if(sub(1) > 0) {
+  if(3 + 1) {
+    0;
+  }
+  else {
+    0;
+  }
+  
+  if(sub(1) > 4) {
     return 1;
+  }
+  else if(sub(1) == 4) {
+    return 0;
   }
   else {
     return -1;

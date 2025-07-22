@@ -6,16 +6,17 @@ use crate::{
 };
 
 pub trait LocalGenerate {
-    fn generate(&self, vars: &mut Vars);
+    fn generate(&self, env: &mut Env);
 }
 
 const SIZE_OF_VARIABLE: usize = 8;
 
-pub struct Vars {
+pub struct Env {
     locals: HashMap<String, usize>,
+    label_count: usize,
 }
 
-impl Vars {
+impl Env {
     pub fn new(args: &[String], stmts: &[Stmt]) -> Self {
         let mut locals = HashMap::<String, usize>::new();
 
@@ -37,28 +38,37 @@ impl Vars {
             }
         }
 
-        Self { locals }
+        Self {
+            locals,
+            label_count: 0,
+        }
     }
 
     pub fn offset(&self, id: &String) -> Option<usize> {
         self.locals.get(id).cloned()
     }
+
+    pub fn increment_label(&mut self) -> usize {
+        self.label_count += 1;
+
+        self.label_count
+    }
 }
 
 impl FnDec {
     pub fn generate(&self) {
-        let mut vars = Vars::new(&self.args, &self.stmts);
+        let mut env = Env::new(&self.args, &self.stmts);
 
         println!("{}:", self.name);
         println!("push rbp");
         println!("mov rbp, rsp");
-        println!("sub rsp, {}", vars.locals.len() * SIZE_OF_VARIABLE);
+        println!("sub rsp, {}", env.locals.len() * SIZE_OF_VARIABLE);
 
         for (i, arg) in self.args.iter().enumerate() {
             if let Some(reg) = ARG_REGS.get(i) {
                 println!(
                     "mov [rbp - {}], {}",
-                    vars.offset(arg).expect("Arg Not Found"),
+                    env.offset(arg).expect("Arg Not Found"),
                     reg
                 );
             } else {
@@ -67,7 +77,7 @@ impl FnDec {
         }
 
         for stmt in &self.stmts {
-            stmt.generate(&mut vars);
+            stmt.generate(&mut env);
         }
 
         if self.name == "main" {

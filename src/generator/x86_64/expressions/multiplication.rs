@@ -4,13 +4,13 @@ use crate::{
 };
 
 impl LocalGenerate for MulExpr {
-    fn generate(&self, vars: &mut crate::generator::x86_64::globals::Vars) {
-        self.left.generate(vars);
+    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        self.left.generate(env);
 
         for mul in &self.rights {
             match mul.op {
                 MulOperator::Mul => {
-                    mul.right.generate(vars);
+                    mul.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
@@ -18,7 +18,7 @@ impl LocalGenerate for MulExpr {
                     println!("push rax");
                 }
                 MulOperator::Div => {
-                    mul.right.generate(vars);
+                    mul.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
