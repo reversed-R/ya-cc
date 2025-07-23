@@ -1,8 +1,8 @@
-main(){
+int main(){
   return fact2(5);
 }
 
-fact(int n){
+int fact(int n){
   if (n > 1) {
     return n * fact(n - 1);
   }
@@ -11,7 +11,7 @@ fact(int n){
   }
 }
 
-fact2(int n){
+int fact2(int n){
   int i;
   int res;
   
