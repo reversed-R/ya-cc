@@ -29,3 +29,31 @@ impl Parse for Program {
         Ok(prog)
     }
 }
+
+#[derive(Debug)]
+pub enum PrimitiveType {
+    Int,
+}
+
+impl PrimitiveType {
+    pub fn aligned_size(&self) -> usize {
+        match self {
+            Self::Int => 8,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum Type {
+    Primitive(PrimitiveType),
+    PtrTo(Box<Type>),
+}
+
+impl Type {
+    pub fn aligned_size(&self) -> usize {
+        match self {
+            Self::PtrTo(_) => 8,
+            Self::Primitive(p) => p.aligned_size(),
+        }
+    }
+}

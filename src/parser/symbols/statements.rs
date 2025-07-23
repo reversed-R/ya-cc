@@ -1,6 +1,7 @@
 pub mod block;
 pub mod expr;
 pub mod if_stmt;
+pub mod var_dec;
 pub mod while_stmt;
 
 use block::BlockStmt;
@@ -10,7 +11,7 @@ use while_stmt::WhileStmt;
 
 use crate::{
     lexer::token::Token,
-    parser::{Parse, ParseError},
+    parser::{symbols::statements::var_dec::VarDec, Parse, ParseError},
 };
 
 use super::expressions::Expr;
@@ -22,6 +23,7 @@ pub enum Stmt {
     Return(Expr),
     If(Box<IfStmt>),
     While(Box<WhileStmt>),
+    VarDec(VarDec),
 }
 
 impl Parse for Stmt {
@@ -58,6 +60,13 @@ impl Parse for Stmt {
                 Token::LBrace => {
                     if let Ok(block) = BlockStmt::consume(tokens) {
                         Ok(Self::Block(block.stmts))
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
+                Token::Int => {
+                    if let Ok(vardec) = VarDec::consume(tokens) {
+                        Ok(Self::VarDec(vardec))
                     } else {
                         Err(ParseError::InvalidToken)
                     }

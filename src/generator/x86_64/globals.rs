@@ -18,8 +18,13 @@ pub struct Env {
 }
 
 impl Env {
-    pub fn new(args: &[String], stmts: &[Stmt], label_count: usize) -> Self {
+    pub fn new_with_vars_size(
+        args: &[String],
+        stmts: &[Stmt],
+        label_count: usize,
+    ) -> (Self, usize) {
         let mut locals = HashMap::<String, usize>::new();
+        let mut offset: usize = 0;
 
         for arg in args {
             if !locals.contains_key(arg) {
@@ -28,21 +33,22 @@ impl Env {
         }
 
         for stmt in stmts {
-            if let Stmt::Expr(expr) = stmt {
-                let ass = &expr.0;
+            if let Stmt::VarDec(vardec) = stmt {
+                if !locals.contains_key(&vardec.name) {
+                    offset += vardec.typ.aligned_size();
 
-                if let Some(id) = ass.assignable_variable() {
-                    if !locals.contains_key(id) {
-                        locals.insert(id.clone(), (locals.len() + 1) * SIZE_OF_VARIABLE);
-                    }
+                    locals.insert(vardec.name.clone(), offset);
                 }
             }
         }
 
-        Self {
-            locals,
-            label_count,
-        }
+        (
+            Self {
+                locals,
+                label_count,
+            },
+            offset,
+        )
     }
 
     pub fn offset(&self, id: &String) -> Option<usize> {
@@ -58,12 +64,12 @@ impl Env {
 
 impl FnDec {
     pub fn generate(&self, label_count: usize) -> usize {
-        let mut env = Env::new(&self.args, &self.stmts, label_count);
+        let (mut env, vars_size) = Env::new_with_vars_size(&self.args, &self.stmts, label_count);
 
         println!("{}:", self.name);
         println!("push rbp");
         println!("mov rbp, rsp");
-        println!("sub rsp, {}", env.locals.len() * SIZE_OF_VARIABLE);
+        println!("sub rsp, {vars_size}");
 
         for (i, arg) in self.args.iter().enumerate() {
             if let Some(reg) = ARG_REGS.get(i) {

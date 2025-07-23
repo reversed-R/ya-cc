@@ -31,6 +31,9 @@ impl LocalGenerate for Stmt {
             Self::While(while_stmt) => {
                 while_stmt.generate(env);
             }
+            Self::VarDec(_) => {
+                //nothing to do
+            }
         }
     }
 }
