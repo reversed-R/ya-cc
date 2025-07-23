@@ -17,6 +17,7 @@ pub enum Token {
     Minus,           // -
     Asterisk,        // *
     Slash,           // /
+    Ampersand,       // &
     Lesser,          // <
     Greater,         // >
     LesEq,           // <=
@@ -49,6 +50,7 @@ impl Token {
             Self::Minus => "-".to_string(),
             Self::Asterisk => "*".to_string(),
             Self::Slash => "/".to_string(),
+            Self::Ampersand => "&".to_string(),
             Self::Lesser => "<".to_string(),
             Self::Greater => ">".to_string(),
             Self::LesEq => "<=".to_string(),

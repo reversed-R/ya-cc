@@ -13,14 +13,16 @@ impl AssignExprNode {
         let arithm = &relat.left;
         let mul = &arithm.left;
         let unary = &mul.left;
+        let ref_unary = &unary.right;
 
         if self.right.rights.is_empty()
             && relat.rights.is_empty()
             && arithm.rights.is_empty()
             && mul.rights.is_empty()
             && UnaryOperator::Plus == unary.op
+            && ref_unary.ops.is_empty()
         {
-            if let Primary::Identifier(id) = &unary.right {
+            if let Primary::Identifier(id) = &ref_unary.right {
                 return Some(id);
             }
         }
@@ -36,14 +38,16 @@ impl AssignExpr {
         let arithm = &relat.left;
         let mul = &arithm.left;
         let unary = &mul.left;
+        let ref_unary = &unary.right;
 
         if equal.rights.is_empty()
             && relat.rights.is_empty()
             && arithm.rights.is_empty()
             && mul.rights.is_empty()
             && UnaryOperator::Plus == unary.op
+            && ref_unary.ops.is_empty()
         {
-            if let Primary::Identifier(id) = &unary.right {
+            if let Primary::Identifier(id) = &ref_unary.right {
                 return Some(id);
             }
         }

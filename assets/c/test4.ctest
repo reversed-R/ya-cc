@@ -1,7 +1,5 @@
 main(){
-  return sub();
-}
-
-sub(){
-  return 4;
+  x = 3;
+  y = &x;
+  return *y;
 }

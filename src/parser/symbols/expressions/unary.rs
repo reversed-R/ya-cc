@@ -5,11 +5,12 @@ use crate::{
 
 use super::primary::Primary;
 
-// Unary = ("+" | "-")? Primary
+// Unary = ("+" | "-")? RefUnary
+// = ("+" | "-")? ("&", "*")* Primary
 #[derive(Debug)]
 pub struct Unary {
     pub op: UnaryOperator,
-    pub right: Primary,
+    pub right: RefUnary,
 }
 
 #[derive(Debug, PartialEq)]
@@ -18,17 +19,29 @@ pub enum UnaryOperator {
     Minus, // -
 }
 
+#[derive(Debug)]
+pub struct RefUnary {
+    pub ops: Vec<RefUnaryOperator>,
+    pub right: Primary,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum RefUnaryOperator {
+    Ref,   // &
+    Deref, // *
+}
+
 impl Parse for Unary {
     type SelfType = Self;
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        // Unary = ("+" | "-")? Primary
+        // Unary = ("+" | "-")? RefUnary
         if let Some(t) = tokens.peek() {
             match t {
                 Token::Plus => {
                     tokens.next();
-                    if let Ok(right) = Primary::consume(tokens) {
+                    if let Ok(right) = RefUnary::consume(tokens) {
                         Ok(Self {
                             op: UnaryOperator::Plus,
                             right,
@@ -39,7 +52,7 @@ impl Parse for Unary {
                 }
                 Token::Minus => {
                     tokens.next();
-                    if let Ok(right) = Primary::consume(tokens) {
+                    if let Ok(right) = RefUnary::consume(tokens) {
                         Ok(Self {
                             op: UnaryOperator::Minus,
                             right,
@@ -49,7 +62,7 @@ impl Parse for Unary {
                     }
                 }
                 _ => {
-                    if let Ok(right) = Primary::consume(tokens) {
+                    if let Ok(right) = RefUnary::consume(tokens) {
                         Ok(Self {
                             op: UnaryOperator::Plus,
                             right,
@@ -59,6 +72,40 @@ impl Parse for Unary {
                     }
                 }
             }
+        } else {
+            Err(ParseError::InvalidToken)
+        }
+    }
+}
+
+impl Parse for RefUnary {
+    type SelfType = Self;
+    fn consume(
+        tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
+    ) -> Result<Self::SelfType, ParseError> {
+        let mut ops: Vec<RefUnaryOperator> = vec![];
+
+        // RefUnary = ("&" | "*")* Primary
+        while let Some(t) = tokens.peek() {
+            match t {
+                Token::Ampersand => {
+                    tokens.next();
+
+                    ops.push(RefUnaryOperator::Ref);
+                }
+                Token::Asterisk => {
+                    tokens.next();
+
+                    ops.push(RefUnaryOperator::Deref);
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+
+        if let Ok(right) = Primary::consume(tokens) {
+            Ok(Self { ops, right })
         } else {
             Err(ParseError::InvalidToken)
         }

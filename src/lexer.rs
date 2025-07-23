@@ -22,6 +22,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
         Token::Minus,     // -
         Token::Asterisk,  // *
         Token::Slash,     // /
+        Token::Ampersand, // &
         Token::Lesser,    // <
         Token::Greater,   // >
         Token::Assign,    // =
