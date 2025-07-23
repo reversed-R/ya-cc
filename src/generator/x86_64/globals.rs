@@ -2,14 +2,15 @@ use std::collections::HashMap;
 
 use crate::{
     generator::x86_64::ARG_REGS,
-    parser::symbols::{globals::FnDec, statements::Stmt},
+    parser::symbols::{
+        globals::FnDec,
+        statements::{var_dec::VarDec, Stmt},
+    },
 };
 
 pub trait LocalGenerate {
     fn generate(&self, env: &mut Env);
 }
-
-const SIZE_OF_VARIABLE: usize = 8;
 
 #[derive(Debug)]
 pub struct Env {
@@ -19,7 +20,7 @@ pub struct Env {
 
 impl Env {
     pub fn new_with_vars_size(
-        args: &[String],
+        args: &[VarDec],
         stmts: &[Stmt],
         label_count: usize,
     ) -> (Self, usize) {
@@ -27,8 +28,10 @@ impl Env {
         let mut offset: usize = 0;
 
         for arg in args {
-            if !locals.contains_key(arg) {
-                locals.insert(arg.clone(), (locals.len() + 1) * SIZE_OF_VARIABLE);
+            if !locals.contains_key(&arg.name) {
+                offset += arg.typ.aligned_size();
+
+                locals.insert(arg.name.clone(), offset);
             }
         }
 
@@ -75,7 +78,7 @@ impl FnDec {
             if let Some(reg) = ARG_REGS.get(i) {
                 println!(
                     "mov [rbp - {}], {}",
-                    env.offset(arg).expect("Arg Not Found"),
+                    env.offset(&arg.name).expect("Arg Not Found"),
                     reg
                 );
             } else {

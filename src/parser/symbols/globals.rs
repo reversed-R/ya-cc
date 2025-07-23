@@ -1,6 +1,9 @@
 use crate::{
     lexer::token::Token,
-    parser::{Parse, ParseError},
+    parser::{
+        symbols::{statements::var_dec::VarDec, PrimitiveType, Type},
+        Parse, ParseError,
+    },
 };
 
 use super::{statements::block::BlockStmt, Stmt};
@@ -8,13 +11,8 @@ use super::{statements::block::BlockStmt, Stmt};
 #[derive(Debug)]
 pub struct FnDec {
     pub name: String,
-    pub args: Vec<String>,
+    pub args: Vec<VarDec>,
     pub stmts: Vec<Stmt>,
-}
-
-#[derive(Debug)]
-struct ArgsDec {
-    pub args: Vec<String>,
 }
 
 impl Parse for FnDec {
@@ -47,6 +45,11 @@ impl Parse for FnDec {
     }
 }
 
+#[derive(Debug)]
+struct ArgsDec {
+    pub args: Vec<VarDec>,
+}
+
 impl Parse for ArgsDec {
     type SelfType = Self;
 
@@ -54,30 +57,43 @@ impl Parse for ArgsDec {
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
         if let Some(Token::LPare) = tokens.next() {
-            let mut args: Vec<String> = vec![];
+            let mut args: Vec<VarDec> = vec![];
 
             while let Some(t) = tokens.peek() {
                 if let Token::RPare = t {
                     tokens.next();
                     return Ok(Self { args });
                 } else {
-                    if let Some(Token::String(arg)) = tokens.peek() {
-                        tokens.next();
-                        args.push(arg.clone());
-                        if let Some(t) = tokens.peek() {
-                            match t {
-                                Token::Comma => {
-                                    tokens.next();
-                                }
-                                Token::RPare => {
-                                    continue;
-                                }
-                                _ => {
-                                    return Err(ParseError::InvalidToken);
-                                }
-                            }
-                        } else {
+                    let primitive: PrimitiveType;
+
+                    match t {
+                        Token::Int => {
+                            tokens.next();
+                            primitive = PrimitiveType::Int;
+                        }
+                        _ => {
                             return Err(ParseError::InvalidToken);
+                        }
+                    }
+
+                    if let Some(Token::String(arg)) = tokens.next() {
+                        args.push(VarDec {
+                            typ: Type::Primitive(primitive),
+                            name: arg.clone(),
+                        });
+                    }
+
+                    if let Some(t) = tokens.peek() {
+                        match t {
+                            Token::Comma => {
+                                tokens.next();
+                            }
+                            Token::RPare => {
+                                continue;
+                            }
+                            _ => {
+                                return Err(ParseError::InvalidToken);
+                            }
                         }
                     } else {
                         return Err(ParseError::InvalidToken);
