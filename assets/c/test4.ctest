@@ -1,7 +1,10 @@
 int main(){
   int x;
   int y;
+  int z;
+  
   x = 3;
   y = &x;
+  z = x = *y = 4;
   return *y;
 }

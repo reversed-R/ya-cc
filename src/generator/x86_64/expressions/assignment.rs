@@ -9,23 +9,23 @@ use crate::{
 
 impl AssignExprNode {
     fn assignable_variable(&self) -> Option<&String> {
-        let relat = &self.right.left;
-        let arithm = &relat.left;
-        let mul = &arithm.left;
-        let unary = &mul.left;
-        let ref_unary = &unary.right;
-
-        if self.right.rights.is_empty()
-            && relat.rights.is_empty()
-            && arithm.rights.is_empty()
-            && mul.rights.is_empty()
-            && UnaryOperator::Plus == unary.op
-            && ref_unary.ops.is_empty()
-        {
-            if let Primary::Identifier(id) = &ref_unary.right {
-                return Some(id);
-            }
-        }
+        // let relat = &self.right.left;
+        // let arithm = &relat.left;
+        // let mul = &arithm.left;
+        // let unary = &mul.left;
+        // let ref_unary = &unary.right;
+        //
+        // if self.right.rights.is_empty()
+        //     && relat.rights.is_empty()
+        //     && arithm.rights.is_empty()
+        //     && mul.rights.is_empty()
+        //     && UnaryOperator::Plus == unary.op
+        //     && ref_unary.ops.is_empty()
+        // {
+        //     if let Primary::Identifier(id) = &ref_unary.right {
+        //         return Some(id);
+        //     }
+        // }
 
         None
     }
@@ -33,24 +33,24 @@ impl AssignExprNode {
 
 impl AssignExpr {
     pub fn assignable_variable(&self) -> Option<&String> {
-        let equal = &self.left;
-        let relat = &equal.left;
-        let arithm = &relat.left;
-        let mul = &arithm.left;
-        let unary = &mul.left;
-        let ref_unary = &unary.right;
-
-        if equal.rights.is_empty()
-            && relat.rights.is_empty()
-            && arithm.rights.is_empty()
-            && mul.rights.is_empty()
-            && UnaryOperator::Plus == unary.op
-            && ref_unary.ops.is_empty()
-        {
-            if let Primary::Identifier(id) = &ref_unary.right {
-                return Some(id);
-            }
-        }
+        // let equal = &self.left;
+        // let relat = &equal.left;
+        // let arithm = &relat.left;
+        // let mul = &arithm.left;
+        // let unary = &mul.left;
+        // let ref_unary = &unary.right;
+        //
+        // if equal.rights.is_empty()
+        //     && relat.rights.is_empty()
+        //     && arithm.rights.is_empty()
+        //     && mul.rights.is_empty()
+        //     && UnaryOperator::Plus == unary.op
+        //     && ref_unary.ops.is_empty()
+        // {
+        //     if let Primary::Identifier(id) = &ref_unary.right {
+        //         return Some(id);
+        //     }
+        // }
 
         None
     }
@@ -58,46 +58,33 @@ impl AssignExpr {
 
 impl LocalGenerate for AssignExpr {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
-        if self.rights.is_empty() {
-            self.left.generate(env);
-        } else {
-            let mut last_op: &AssignOperator = &AssignOperator::Assign;
+        self.right.generate(env);
 
-            for (i, ass) in self.rights.iter().rev().enumerate() {
-                if i == 0 {
-                    ass.right.generate(env);
-                    last_op = &ass.op;
-                } else if let Some(id) = ass.assignable_variable() {
-                    ass.right.generate(env);
-
+        for ass in self.lefts.iter().rev() {
+            match ass.left.op {
+                UnaryOperator::Plus => {
                     println!("pop rdi");
 
-                    if let Some(offset) = env.offset(id) {
-                        last_op.generate(offset);
-                    } else {
-                        panic!("Local Variable Not Found");
+                    if ass.left.right.ops.is_empty() {
+                        match &ass.left.right.right {
+                            Primary::Identifier(id) => {
+                                if let Some(offset) = env.offset(id) {
+                                    ass.op.generate(offset);
+                                } else {
+                                    panic!("Local Variable Not Found");
+                                }
+                            }
+                            _ => {
+                                panic!("Invalid Left Value");
+                            }
+                        }
                     }
 
                     println!("push rdi");
-
-                    last_op = &ass.op;
-                } else {
+                }
+                UnaryOperator::Minus => {
                     panic!("Invalid Left Value");
                 }
-            }
-
-            if let Some(id) = self.assignable_variable() {
-                println!("pop rdi");
-
-                if let Some(offset) = env.offset(id) {
-                    last_op.generate(offset);
-                } else {
-                    panic!("Local Variable Not Found");
-                }
-
-                println!("push rdi");
-            } else {
-                panic!("Invalid Left Value");
             }
         }
     }

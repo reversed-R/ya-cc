@@ -1,42 +1,27 @@
 use crate::{
     lexer::token::Token,
-    parser::{Parse, ParseError},
+    parser::{symbols::expressions::unary::Unary, Parse, ParseError},
 };
 
 use super::equality::EqualityExpr;
 
-// EqualityExpr = RelationalExpr ("==" RelationalExpr | "!=" RelationalExpr)*
+// AssignExpr = (Unary "=")* EqualityExpr
 #[derive(Debug)]
 pub struct AssignExpr {
-    pub left: EqualityExpr,
-    pub rights: Vec<AssignExprNode>,
-    // now, only = can be used, but +=, -=, and so on will be used in the future
-    // so, node style data structure has a meaning
-    // (if only one operator can be used, Vec<Equality> is ok)
-}
-
-#[derive(Debug)]
-pub struct AssignExprNode {
-    pub op: AssignOperator,
+    pub lefts: Vec<AssignExprNode>,
     pub right: EqualityExpr,
 }
 
 #[derive(Debug)]
-pub enum AssignOperator {
-    Assign, // =
+pub struct AssignExprNode {
+    pub left: Unary,
+    pub op: AssignOperator,
 }
 
-impl AssignExpr {
-    pub fn new(equal: EqualityExpr) -> Self {
-        Self {
-            left: equal,
-            rights: vec![],
-        }
-    }
-
-    fn push(&mut self, op: AssignOperator, right: EqualityExpr) {
-        self.rights.push(AssignExprNode { op, right });
-    }
+// now, only = can be used, but +=, -=, and so on will be used in the future
+#[derive(Debug)]
+pub enum AssignOperator {
+    Assign, // =
 }
 
 impl Parse for AssignExpr {
@@ -45,26 +30,33 @@ impl Parse for AssignExpr {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        let mut assign: Self;
+        let mut lefts: Vec<AssignExprNode> = vec![];
+        let mut last_tokens = tokens.clone();
 
-        if let Ok(equal) = EqualityExpr::consume(tokens) {
-            assign = Self::new(equal);
-
-            while let Some(t) = tokens.peek() {
+        while let Ok(unary) = Unary::consume(tokens) {
+            if let Some(t) = tokens.peek() {
                 match t {
                     Token::Assign => {
                         tokens.next();
-                        if let Ok(right) = EqualityExpr::consume(tokens) {
-                            assign.push(AssignOperator::Assign, right);
-                        }
+
+                        lefts.push(AssignExprNode {
+                            left: unary,
+                            op: AssignOperator::Assign,
+                        });
+
+                        last_tokens = tokens.clone();
                     }
                     _ => {
-                        return Ok(assign);
+                        break;
                     }
                 }
             }
+        }
 
-            Ok(assign)
+        *tokens = last_tokens;
+
+        if let Ok(right) = EqualityExpr::consume(tokens) {
+            Ok(Self { lefts, right })
         } else {
             Err(ParseError::InvalidToken)
         }
