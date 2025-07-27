@@ -30,30 +30,41 @@ impl LocalGenerate for AssignExpr {
                             }
                         }
                     } else {
-                        for op in &ass.left.right.ops {
+                        for (i, op) in ass.left.right.ops[0..ass.left.right.ops.len() - 1]
+                            .iter()
+                            .enumerate()
+                        {
                             match op {
                                 RefUnaryOperator::Ref => {
                                     panic!("Invalid Left Value");
                                 }
-                                RefUnaryOperator::Deref => match &ass.left.right.right {
-                                    Primary::Identifier(id) => {
-                                        if let Some(offset) = env.offset(id) {
-                                            println!("pop rdi");
-
-                                            println!("mov rax, [rbp - {offset}]");
-                                            println!("mov [rax], rdi");
-
-                                            println!("push rdi");
-                                        } else {
-                                            panic!("Local Variable Not Found");
+                                RefUnaryOperator::Deref => {
+                                    if i == 0 {
+                                        match &ass.left.right.right {
+                                            Primary::Identifier(id) => {
+                                                if let Some(offset) = env.offset(id) {
+                                                    println!("mov rax, [rbp - {offset}]");
+                                                } else {
+                                                    panic!("Local Variable Not Found");
+                                                }
+                                            }
+                                            _ => {
+                                                panic!("Invalid Left Value");
+                                            }
                                         }
                                     }
-                                    _ => {
-                                        panic!("Invalid Left Value");
-                                    }
-                                },
+                                    println!("mov rax, [rax]");
+                                }
                             }
                         }
+
+                        if let Some(RefUnaryOperator::Ref) = ass.left.right.ops.last() {
+                            panic!("Invalid Left Value");
+                        }
+
+                        println!("pop rdi");
+                        println!("mov [rax], rdi");
+                        println!("push rdi");
                     }
                 }
                 UnaryOperator::Minus => {

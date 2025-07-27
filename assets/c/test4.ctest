@@ -1,9 +1,11 @@
 int main(){
   int x;
   int y;
+  int z;
   
   x = 3;
   y = &x;
-  *y = 4;
+  z = &y;
+  **z = 4;
   return x;
 }
