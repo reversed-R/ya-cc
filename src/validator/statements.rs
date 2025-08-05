@@ -11,9 +11,13 @@ impl StmtTypeValidate for Stmt {
     fn validate_type(&self, env: &mut Env) -> Result<(), TypeError> {
         match self {
             Self::Block(stmts) => {
+                env.begin_scope();
+
                 for stmt in stmts {
                     stmt.validate_type(env)?;
                 }
+
+                env.end_scope();
 
                 Ok(())
             }

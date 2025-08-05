@@ -24,7 +24,11 @@ fn main() {
             let prog = parser::parse(tokens).expect("Parse Error");
             // println!("{:#?}", prog);
 
-            generator::x86_64::generate(prog);
+            if let Err(e) = validator::validate(&prog) {
+                panic!("{:#?}", e);
+            } else {
+                generator::x86_64::generate(prog);
+            }
         }
     } else {
         println!("1 Argument Required: <file-path>")

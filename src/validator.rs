@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use crate::parser::symbols::{globals::FnDec, statements::var_dec::VarDec, Program, Type};
 
-pub fn validate(prog: Program) -> Result<(), TypeError> {
+pub fn validate(prog: &Program) -> Result<(), TypeError> {
     let mut env = Env::new(&prog.fns);
 
     for f in &prog.fns {
@@ -15,6 +15,7 @@ pub fn validate(prog: Program) -> Result<(), TypeError> {
     Ok(())
 }
 
+#[derive(Debug)]
 pub enum TypeError {
     VariableNotFound(String),
     FunctionNotFound(String),
