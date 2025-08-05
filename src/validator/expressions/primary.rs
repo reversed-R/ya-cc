@@ -14,7 +14,7 @@ impl ExprTypeValidate for Primary {
                 Literal::Float(_) => Ok(Type::Primitive(PrimitiveType::Float)),
             },
             Self::Identifier(id) => env
-                .locals
+                .vars
                 .get(id)
                 .ok_or(TypeError::VariableNotFound(id.clone()))
                 .cloned(),

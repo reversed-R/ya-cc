@@ -24,18 +24,24 @@ impl StmtTypeValidate for Stmt {
             }
             Self::Return(expr) => {
                 let expr_typ = expr.validate_type(env)?;
-                if expr_typ.equals(&env.rtype) {
-                    Ok(())
+
+                if let Some(rtype) = &env.rtype {
+                    if expr_typ.equals(rtype) {
+                        Ok(())
+                    } else {
+                        Err(TypeError::Mismatch(rtype.clone(), expr_typ))
+                    }
                 } else {
-                    Err(TypeError::Mismatch(env.rtype.clone(), expr_typ))
+                    Err(TypeError::OutOfScopes)
                 }
             }
             Self::If(if_stmt) => if_stmt.validate_type(env),
             Self::While(while_stmt) => while_stmt.validate_type(env),
-            Self::VarDec(_) => {
+            Self::VarDec(var) => {
+                env.vars.insert(var.name.clone(), var.typ.clone())
+
                 // TODO:
                 // when support initialization, must validate type
-                Ok(())
             }
         }
     }
