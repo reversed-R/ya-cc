@@ -5,6 +5,7 @@ use crate::{
     parser::symbols::{
         globals::FnDec,
         statements::{var_dec::VarDec, Stmt},
+        Type,
     },
 };
 
@@ -14,7 +15,7 @@ pub trait LocalGenerate {
 
 #[derive(Debug)]
 pub struct Env {
-    locals: HashMap<String, usize>,
+    locals: HashMap<String, Type>,
     label_count: usize,
 }
 
@@ -24,14 +25,14 @@ impl Env {
         stmts: &[Stmt],
         label_count: usize,
     ) -> (Self, usize) {
-        let mut locals = HashMap::<String, usize>::new();
+        let mut locals = HashMap::<String, Type>::new();
         let mut offset: usize = 0;
 
         for arg in args {
             if !locals.contains_key(&arg.name) {
                 offset += arg.typ.aligned_size();
 
-                locals.insert(arg.name.clone(), offset);
+                locals.insert(arg.name.clone(), arg.typ.clone());
             }
         }
 
@@ -40,7 +41,7 @@ impl Env {
                 if !locals.contains_key(&vardec.name) {
                     offset += vardec.typ.aligned_size();
 
-                    locals.insert(vardec.name.clone(), offset);
+                    locals.insert(vardec.name.clone(), vardec.typ.clone());
                 }
             }
         }
@@ -55,7 +56,7 @@ impl Env {
     }
 
     pub fn offset(&self, id: &String) -> Option<usize> {
-        self.locals.get(id).cloned()
+        self.locals.get(id).map(|typ| typ.aligned_size())
     }
 
     pub fn increment_label(&mut self) -> usize {

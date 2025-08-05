@@ -30,7 +30,7 @@ impl Parse for Program {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PrimitiveType {
     Int,
 }
@@ -43,7 +43,7 @@ impl PrimitiveType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Primitive(PrimitiveType),
     PtrTo(Box<Type>),
