@@ -1,6 +1,7 @@
 mod generator;
 mod lexer;
 mod parser;
+mod validator;
 
 use std::{env, fs::File, io::Read};
 

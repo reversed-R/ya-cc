@@ -30,7 +30,7 @@ impl Parse for Program {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PrimitiveType {
     Int,
 }
@@ -43,7 +43,7 @@ impl PrimitiveType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Primitive(PrimitiveType),
     PtrTo(Box<Type>),
@@ -54,6 +54,19 @@ impl Type {
         match self {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.aligned_size(),
+        }
+    }
+
+    pub fn equals(&self, other: &Self) -> bool {
+        match self {
+            Self::Primitive(p) => match other {
+                Self::Primitive(other_p) => p == other_p,
+                _ => false,
+            },
+            Self::PtrTo(ptr) => match other {
+                Self::PtrTo(other_ptr) => ptr.equals(other_ptr),
+                _ => false,
+            },
         }
     }
 }
