@@ -7,14 +7,12 @@ pub mod relational;
 pub mod unary;
 
 use crate::{
-    parser::symbols::{expressions::Expr, PrimitiveType, Type},
+    parser::symbols::{expressions::Expr, Type},
     validator::{Env, ExprTypeValidate, TypeError},
 };
 
 impl ExprTypeValidate for Expr {
     fn validate_type(&self, env: &mut Env) -> Result<Type, TypeError> {
-        // TODO:
-
-        Ok(Type::Primitive(PrimitiveType::Int))
+        self.0.validate_type(env)
     }
 }

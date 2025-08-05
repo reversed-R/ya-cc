@@ -30,16 +30,8 @@ impl StmtTypeValidate for Stmt {
                     Err(TypeError::Mismatch(env.rtype.clone(), expr_typ))
                 }
             }
-            Self::If(if_stmt) => {
-                // TODO:
-                // if_stmt.validate_type(env)
-                Ok(())
-            }
-            Self::While(while_stmt) => {
-                // TODO:
-                // while_stmt.validate_type(env);
-                Ok(())
-            }
+            Self::If(if_stmt) => if_stmt.validate_type(env),
+            Self::While(while_stmt) => while_stmt.validate_type(env),
             Self::VarDec(_) => {
                 // TODO:
                 // when support initialization, must validate type
