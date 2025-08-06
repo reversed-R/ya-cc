@@ -1,13 +1,13 @@
-main(){
-  a = 0;
-  return sub(subsub(6), 1);
-}
+int main(){
+  int x;
+  int *y;
+  int **z;
 
-sub(a, b){
-  return 4;
-  3;
-}
+  x = 3;
+  y = &x;
+  z = &*&y;
 
-subsub(a){
-  return 0;
+  **z = 4;
+  
+  return x;
 }
