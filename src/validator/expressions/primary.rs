@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl ExprTypeValidate for Primary {
-    fn validate_type(&self, env: &mut Env) -> Result<Type, TypeError> {
+    fn validate_type(&self, env: &Env) -> Result<Type, TypeError> {
         match self {
             Self::Literal(lit) => match lit {
                 Literal::Int(_) => Ok(Type::Primitive(PrimitiveType::Int)),
@@ -19,12 +19,33 @@ impl ExprTypeValidate for Primary {
                 .ok_or(TypeError::VariableNotFound(id.clone()))
                 .cloned(),
             Self::Expr(expr) => expr.validate_type(env),
-            Self::FnCall(f) => {
-                if let Some(fsign) = env.fns.get(&f.name) {
-                    // TODO:
-                    Ok(fsign.rtype.clone())
+            Self::FnCall(fcalling) => {
+                if let Some(fcallee) = env.fns.get(&fcalling.name) {
+                    let mut i = 0;
+                    while let Some(acalling) = fcalling.args.get(i) {
+                        let acalling_typ = acalling.validate_type(env)?;
+
+                        if let Some(acallee) = fcallee.args.get(i) {
+                            if !acalling_typ.equals(&acallee.typ) {
+                                return Err(TypeError::ArgumentMismatch(
+                                    Some(acallee.typ.clone()),
+                                    Some(acalling_typ),
+                                ));
+                            }
+                        } else {
+                            return Err(TypeError::ArgumentMismatch(None, Some(acalling_typ)));
+                        }
+
+                        i += 1;
+                    }
+
+                    if let Some(acallee) = fcallee.args.get(i) {
+                        Err(TypeError::ArgumentMismatch(Some(acallee.typ.clone()), None))
+                    } else {
+                        Ok(fcallee.rtype.clone())
+                    }
                 } else {
-                    Err(TypeError::VariableNotFound(f.name.clone()))
+                    Err(TypeError::FunctionNotFound(fcalling.name.clone()))
                 }
             }
         }

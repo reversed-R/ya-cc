@@ -21,7 +21,8 @@ pub enum TypeError {
     FunctionNotFound(String),
     VariableConflict(String),
     OutOfScopes,
-    Mismatch(Type, Type), // outer type, inner type
+    ArgumentMismatch(Option<Type>, Option<Type>), // callee type, calling type
+    Mismatch(Type, Type),                         // outer type, inner type
 }
 
 pub trait StmtTypeValidate {
@@ -29,7 +30,7 @@ pub trait StmtTypeValidate {
 }
 
 pub trait ExprTypeValidate {
-    fn validate_type(&self, env: &mut Env) -> Result<Type, TypeError>;
+    fn validate_type(&self, env: &Env) -> Result<Type, TypeError>;
 }
 
 #[derive(Debug)]

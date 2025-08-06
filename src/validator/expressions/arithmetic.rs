@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl ExprTypeValidate for ArithmExpr {
-    fn validate_type(&self, env: &mut Env) -> Result<Type, TypeError> {
+    fn validate_type(&self, env: &Env) -> Result<Type, TypeError> {
         // TODO:
 
         Ok(Type::Primitive(PrimitiveType::Int))

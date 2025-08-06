@@ -12,7 +12,7 @@ use crate::{
 };
 
 impl ExprTypeValidate for Expr {
-    fn validate_type(&self, env: &mut Env) -> Result<Type, TypeError> {
+    fn validate_type(&self, env: &Env) -> Result<Type, TypeError> {
         self.0.validate_type(env)
     }
 }
