@@ -6,13 +6,22 @@ pub mod primary;
 pub mod relational;
 pub mod unary;
 
-use crate::{
-    parser::symbols::{expressions::Expr, Type},
-    validator::{Env, ExprTypeValidate, TypeError},
-};
+use crate::validator::{Env, ExprTypeValidate, PrimitiveType, Type, TypeError};
 
-impl ExprTypeValidate for Expr {
-    fn validate_type(&self, env: &Env) -> Result<Type, TypeError> {
-        self.0.validate_type(env)
+#[derive(Debug)]
+pub struct Expr {
+    pub typ: Type,
+    // pub ass: AssignExpr
+}
+
+impl ExprTypeValidate for crate::parser::symbols::expressions::Expr {
+    type ValidatedType = Expr;
+
+    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+        // self.0.validate(env)
+
+        Ok(Expr {
+            typ: Type::Primitive(PrimitiveType::Int),
+        })
     }
 }

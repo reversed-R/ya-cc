@@ -3,13 +3,16 @@ pub mod globals;
 pub mod statements;
 use std::collections::HashMap;
 
-use crate::parser::symbols::{globals::FnDec, statements::var_dec::VarDec, Program, Type};
+use crate::{
+    parser::symbols::{globals::FnDec, statements::var_dec::VarDec},
+    validator::globals::Function,
+};
 
-pub fn validate(prog: &Program) -> Result<(), TypeError> {
+pub fn validate(prog: &crate::parser::symbols::Program) -> Result<(), TypeError> {
     let mut env = Env::new(&prog.fns);
 
     for f in &prog.fns {
-        f.validate_type(&mut env)?;
+        f.validate(&mut env)?;
     }
 
     Ok(())
@@ -26,12 +29,78 @@ pub enum TypeError {
     DerefNotAllowed(Type),
 }
 
+// pub trait StmtTypeValidate {
+//     fn validate_type(&self, env: &mut Env) -> Result<(), TypeError>;
+// }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum PrimitiveType {
+    Int,
+    Float,
+}
+
+impl PrimitiveType {
+    pub fn aligned_size(&self) -> usize {
+        match self {
+            Self::Int => 8,
+            Self::Float => 8,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    Primitive(PrimitiveType),
+    PtrTo(Box<Type>),
+}
+
+impl Type {
+    pub fn aligned_size(&self) -> usize {
+        match self {
+            Self::PtrTo(_) => 8,
+            Self::Primitive(p) => p.aligned_size(),
+        }
+    }
+
+    pub fn equals(&self, other: &Self) -> bool {
+        match self {
+            Self::Primitive(p) => match other {
+                Self::Primitive(other_p) => p == other_p,
+                _ => false,
+            },
+            Self::PtrTo(ptr) => match other {
+                Self::PtrTo(other_ptr) => ptr.equals(other_ptr),
+                _ => false,
+            },
+        }
+    }
+
+    pub fn ptr_to(typ: Self) -> Self {
+        Self::PtrTo(Box::new(typ))
+    }
+
+    pub fn deref_of(typ: &Self) -> Option<Self> {
+        if let Self::PtrTo(deref) = typ {
+            Some(*deref.clone())
+        } else {
+            None
+        }
+    }
+}
+pub struct Program {
+    fns: HashMap<String, Function>,
+}
+
 pub trait StmtTypeValidate {
-    fn validate_type(&self, env: &mut Env) -> Result<(), TypeError>;
+    type ValidatedType;
+
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError>;
 }
 
 pub trait ExprTypeValidate {
-    fn validate_type(&self, env: &Env) -> Result<Type, TypeError>;
+    type ValidatedType;
+
+    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError>;
 }
 
 #[derive(Debug)]

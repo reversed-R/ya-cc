@@ -1,9 +1,7 @@
 use crate::{
     lexer::token::Token,
-    parser::{
-        symbols::{PrimitiveType, Type},
-        Parse, ParseError,
-    },
+    parser::{Parse, ParseError},
+    validator::{PrimitiveType, Type},
 };
 
 #[derive(Debug)]

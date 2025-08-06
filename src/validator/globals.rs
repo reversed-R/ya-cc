@@ -1,18 +1,28 @@
 use crate::{
     parser::symbols::globals::FnDec,
-    validator::{Env, StmtTypeValidate, TypeError},
+    validator::{statements::Stmt, Env, StmtTypeValidate, TypeError},
 };
 
+pub struct Function {
+    stmts: Vec<Stmt>,
+}
+// 次のcodegenで、関数はただのラベルに続けてインストラクションを並べただけなのでいらない
+// args: Vec<Type>,
+// rtype: Type,
+
 impl StmtTypeValidate for FnDec {
-    fn validate_type(&self, env: &mut Env) -> Result<(), TypeError> {
+    type ValidatedType = Function;
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         env.begin_local(&self.args, &self.rtype);
 
-        for stmt in &self.stmts {
-            stmt.validate_type(env)?;
-        }
+        let stmts = self
+            .stmts
+            .iter()
+            .map(|stmt| stmt.validate(env))
+            .collect::<Result<Vec<Stmt>, TypeError>>()?;
 
         env.end_local();
 
-        Ok(())
+        Ok(Function { stmts })
     }
 }

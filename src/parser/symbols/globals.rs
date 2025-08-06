@@ -1,9 +1,7 @@
 use crate::{
     lexer::token::Token,
-    parser::{
-        symbols::{statements::var_dec::VarDec, PrimitiveType, Type},
-        Parse, ParseError,
-    },
+    parser::{symbols::statements::var_dec::VarDec, Parse, ParseError},
+    validator::{PrimitiveType, Type},
 };
 
 use super::{statements::block::BlockStmt, Stmt};

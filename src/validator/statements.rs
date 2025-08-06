@@ -1,48 +1,62 @@
-pub mod block;
-pub mod if_stmt;
-pub mod while_stmt;
+pub mod branch_stmt;
+pub mod compound;
+pub mod loop_stmt;
+pub mod vardec_stmt;
 
-use crate::{
-    parser::symbols::statements::Stmt,
-    validator::{Env, ExprTypeValidate, StmtTypeValidate, TypeError},
+use crate::validator::{
+    expressions::Expr,
+    statements::{branch_stmt::BranchStmt, loop_stmt::LoopStmt},
+    Env, ExprTypeValidate, StmtTypeValidate, TypeError,
 };
 
-impl StmtTypeValidate for Stmt {
-    fn validate_type(&self, env: &mut Env) -> Result<(), TypeError> {
+#[derive(Debug)]
+pub enum Stmt {
+    Compound(Vec<Stmt>),
+    Expr(Expr),
+    // Return(Expr),
+    Branch(Box<BranchStmt>),
+    Loop(Box<LoopStmt>),
+    // VarDec(VarDec),
+}
+
+impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
+    type ValidatedType = Stmt;
+
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         match self {
             Self::Block(stmts) => {
                 env.begin_scope();
 
-                for stmt in stmts {
-                    stmt.validate_type(env)?;
-                }
+                let stmts = stmts
+                    .iter()
+                    .map(|stmt| stmt.validate(env))
+                    .collect::<Result<Vec<Stmt>, TypeError>>()?;
 
                 env.end_scope();
 
-                Ok(())
+                Ok(Stmt::Compound(stmts))
             }
-            Self::Expr(expr) => {
-                expr.validate_type(env)?;
-
-                Ok(())
-            }
+            Self::Expr(expr) => Ok(Stmt::Expr(expr.validate(env)?)),
             Self::Return(expr) => {
-                let expr_typ = expr.validate_type(env)?;
+                let expr = expr.validate(env)?;
 
                 if let Some(rtype) = &env.rtype {
-                    if expr_typ.equals(rtype) {
-                        Ok(())
+                    if expr.typ.equals(rtype) {
+                        Ok(Stmt::Expr(expr))
                     } else {
-                        Err(TypeError::Mismatch(rtype.clone(), expr_typ))
+                        Err(TypeError::Mismatch(rtype.clone(), expr.typ))
                     }
                 } else {
                     Err(TypeError::OutOfScopes)
                 }
             }
-            Self::If(if_stmt) => if_stmt.validate_type(env),
-            Self::While(while_stmt) => while_stmt.validate_type(env),
+            Self::If(if_stmt) => Ok(Stmt::Branch(Box::new(if_stmt.validate(env)?))),
+            Self::While(while_stmt) => Ok(Stmt::Loop(Box::new(while_stmt.validate(env)?))),
             Self::VarDec(var) => {
-                env.vars.insert(var.name.clone(), var.typ.clone())
+                env.vars.insert(var.name.clone(), var.typ.clone())?;
+
+                // TODO:
+                Err(TypeError::VariableConflict("TODO".to_string()))
 
                 // TODO:
                 // when support initialization, must validate type
