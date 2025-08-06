@@ -23,6 +23,7 @@ pub enum TypeError {
     OutOfScopes,
     ArgumentMismatch(Option<Type>, Option<Type>), // callee type, calling type
     Mismatch(Type, Type),                         // outer type, inner type
+    DerefNotAllowed(Type),
 }
 
 pub trait StmtTypeValidate {

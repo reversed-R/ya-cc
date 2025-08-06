@@ -71,4 +71,16 @@ impl Type {
             },
         }
     }
+
+    pub fn ptr_to(typ: Self) -> Self {
+        Self::PtrTo(Box::new(typ))
+    }
+
+    pub fn deref_of(typ: &Self) -> Option<Self> {
+        if let Self::PtrTo(deref) = typ {
+            Some(*deref.clone())
+        } else {
+            None
+        }
+    }
 }

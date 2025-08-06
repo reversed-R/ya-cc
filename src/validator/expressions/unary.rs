@@ -1,12 +1,30 @@
 use crate::{
-    parser::symbols::{expressions::unary::Unary, PrimitiveType, Type},
+    parser::symbols::{
+        expressions::unary::{RefUnaryOperator, Unary},
+        Type,
+    },
     validator::{Env, ExprTypeValidate, TypeError},
 };
 
 impl ExprTypeValidate for Unary {
     fn validate_type(&self, env: &Env) -> Result<Type, TypeError> {
-        // TODO:
+        let mut typ = self.right.right.validate_type(env)?;
 
-        Ok(Type::Primitive(PrimitiveType::Int))
+        for op in self.right.ops.iter().rev() {
+            match op {
+                RefUnaryOperator::Ref => {
+                    typ = Type::ptr_to(typ);
+                }
+                RefUnaryOperator::Deref => {
+                    if let Some(deref) = Type::deref_of(&typ) {
+                        typ = deref;
+                    } else {
+                        return Err(TypeError::DerefNotAllowed(typ));
+                    }
+                }
+            }
+        }
+
+        Ok(typ)
     }
 }

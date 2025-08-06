@@ -1,12 +1,20 @@
 use crate::{
-    parser::symbols::{expressions::multiplication::MulExpr, PrimitiveType, Type},
+    parser::symbols::{expressions::multiplication::MulExpr, Type},
     validator::{Env, ExprTypeValidate, TypeError},
 };
 
 impl ExprTypeValidate for MulExpr {
     fn validate_type(&self, env: &Env) -> Result<Type, TypeError> {
-        // TODO:
+        let typ = self.left.validate_type(env)?;
 
-        Ok(Type::Primitive(PrimitiveType::Int))
+        for right in &self.rights {
+            let right_typ = right.right.validate_type(env)?;
+
+            if !typ.equals(&right_typ) {
+                return Err(TypeError::Mismatch(typ, right_typ));
+            }
+        }
+
+        Ok(typ)
     }
 }
