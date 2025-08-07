@@ -14,7 +14,7 @@ impl StmtTypeValidate for crate::parser::symbols::statements::if_stmt::IfStmt {
 
     fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         Ok(BranchStmt {
-            cond: self.cond.validate(env)?,
+            cond: self.cond.validate(env)?.1,
             then: self.then.validate(env)?,
             els: self.els.as_ref().map(|els| els.validate(env)).transpose()?,
         })

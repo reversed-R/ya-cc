@@ -1,6 +1,7 @@
 pub mod expressions;
 pub mod globals;
 pub mod statements;
+
 use std::collections::HashMap;
 
 use crate::{
@@ -8,14 +9,15 @@ use crate::{
     validator::globals::Function,
 };
 
-pub fn validate(prog: &crate::parser::symbols::Program) -> Result<(), TypeError> {
+pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
     let mut env = Env::new(&prog.fns);
+    let mut fns = HashMap::new();
 
     for f in &prog.fns {
-        f.validate(&mut env)?;
+        fns.insert(f.name.clone(), f.validate(&mut env)?);
     }
 
-    Ok(())
+    Ok(Program { fns })
 }
 
 #[derive(Debug)]
@@ -28,10 +30,6 @@ pub enum TypeError {
     Mismatch(Type, Type),                         // outer type, inner type
     DerefNotAllowed(Type),
 }
-
-// pub trait StmtTypeValidate {
-//     fn validate_type(&self, env: &mut Env) -> Result<(), TypeError>;
-// }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrimitiveType {
@@ -87,6 +85,7 @@ impl Type {
         }
     }
 }
+
 pub struct Program {
     fns: HashMap<String, Function>,
 }
@@ -164,9 +163,20 @@ impl<'parsed> Env<'parsed> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum VarAddr {
+    Local(usize), // basepointer + offset
+}
+
+#[derive(Debug, Clone)]
+pub struct Variable {
+    pub typ: Type,
+    pub addr: VarAddr,
+}
+
 #[derive(Debug)]
 pub struct NestedScope {
-    scopes: Vec<HashMap<String, Type>>,
+    scopes: Vec<HashMap<String, Variable>>,
 }
 
 impl NestedScope {
@@ -185,7 +195,20 @@ impl NestedScope {
     pub fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
         if let Some(last) = self.scopes.last_mut() {
             if !last.contains_key(&var) {
-                last.insert(var.clone(), typ);
+                let offset = last
+                    .values()
+                    .map(|v| match v.addr {
+                        VarAddr::Local(offset) => offset,
+                    })
+                    .sum();
+
+                last.insert(
+                    var.clone(),
+                    Variable {
+                        typ,
+                        addr: VarAddr::Local(offset),
+                    },
+                );
 
                 Ok(())
             } else {
@@ -196,10 +219,10 @@ impl NestedScope {
         }
     }
 
-    pub fn get(&self, var: &String) -> Option<&Type> {
+    pub fn get(&self, var: &String) -> Option<&Variable> {
         for scope in self.scopes.iter().rev() {
-            if let Some(typ) = scope.get(var) {
-                return Some(typ);
+            if let Some(var) = scope.get(var) {
+                return Some(var);
             }
         }
 

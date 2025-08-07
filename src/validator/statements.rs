@@ -13,10 +13,10 @@ use crate::validator::{
 pub enum Stmt {
     Compound(Vec<Stmt>),
     Expr(Expr),
-    // Return(Expr),
+    Return(Expr),
     Branch(Box<BranchStmt>),
     Loop(Box<LoopStmt>),
-    // VarDec(VarDec),
+    VarDec, // in codegen, variable declaration statement is nothing to do
 }
 
 impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
@@ -36,15 +36,15 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
 
                 Ok(Stmt::Compound(stmts))
             }
-            Self::Expr(expr) => Ok(Stmt::Expr(expr.validate(env)?)),
+            Self::Expr(expr) => Ok(Stmt::Expr(expr.validate(env)?.1)),
             Self::Return(expr) => {
-                let expr = expr.validate(env)?;
+                let (expr_typ, expr) = expr.validate(env)?;
 
                 if let Some(rtype) = &env.rtype {
-                    if expr.typ.equals(rtype) {
-                        Ok(Stmt::Expr(expr))
+                    if expr_typ.equals(rtype) {
+                        Ok(Stmt::Return(expr))
                     } else {
-                        Err(TypeError::Mismatch(rtype.clone(), expr.typ))
+                        Err(TypeError::Mismatch(rtype.clone(), expr_typ))
                     }
                 } else {
                     Err(TypeError::OutOfScopes)
@@ -55,8 +55,7 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
             Self::VarDec(var) => {
                 env.vars.insert(var.name.clone(), var.typ.clone())?;
 
-                // TODO:
-                Err(TypeError::VariableConflict("TODO".to_string()))
+                Ok(Stmt::VarDec)
 
                 // TODO:
                 // when support initialization, must validate type

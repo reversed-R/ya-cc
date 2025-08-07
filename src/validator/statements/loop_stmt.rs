@@ -13,7 +13,7 @@ impl StmtTypeValidate for crate::parser::symbols::statements::while_stmt::WhileS
 
     fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         Ok(LoopStmt {
-            cond: self.cond.validate(env)?,
+            cond: self.cond.validate(env)?.1,
             stmt: self.stmt.validate(env)?,
         })
     }
