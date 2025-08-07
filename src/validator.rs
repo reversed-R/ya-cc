@@ -193,15 +193,22 @@ impl NestedScope {
     }
 
     pub fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        if let Some(last) = self.scopes.last_mut() {
-            if !last.contains_key(&var) {
-                let offset = last
+        let offset = &self
+            .scopes
+            .iter()
+            .map(|scope| {
+                scope
                     .values()
                     .map(|v| match v.addr {
                         VarAddr::Local(offset) => offset,
                     })
-                    .sum();
+                    .sum::<usize>()
+            })
+            .sum::<usize>()
+            + typ.aligned_size();
 
+        if let Some(last) = self.scopes.last_mut() {
+            if !last.contains_key(&var) {
                 last.insert(
                     var.clone(),
                     Variable {
