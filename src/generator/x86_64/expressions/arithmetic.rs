@@ -9,7 +9,7 @@ impl LocalGenerate for ArithmExpr {
 
         for arithm in &self.rights {
             match arithm.op {
-                ArithmOperator::Add => {
+                ArithmOperator::Iadd => {
                     arithm.right.generate(env);
 
                     println!("pop rdi");
@@ -17,13 +17,32 @@ impl LocalGenerate for ArithmExpr {
                     println!("add rax, rdi");
                     println!("push rax");
                 }
-                ArithmOperator::Sub => {
+                ArithmOperator::Isub => {
                     arithm.right.generate(env);
 
                     println!("pop rdi");
                     println!("pop rax");
                     println!("sub rax, rdi");
                     println!("push rax");
+                }
+                ArithmOperator::Padd => {
+                    arithm.right.generate(env);
+
+                    println!("pop rdi");
+                    println!("pop rax");
+                    println!("add rax, rdi");
+                    println!("push rax");
+                }
+                ArithmOperator::Psub => {
+                    arithm.right.generate(env);
+
+                    println!("pop rdi");
+                    println!("pop rax");
+                    println!("sub rax, rdi");
+                    println!("push rax");
+                }
+                _ => {
+                    panic!("TODO: float calc")
                 }
             }
         }
