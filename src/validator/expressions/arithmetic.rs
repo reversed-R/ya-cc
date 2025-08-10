@@ -1,6 +1,9 @@
 use crate::{
     parser::symbols::expressions::arithmetic,
-    validator::{expressions::multiplication::MulExpr, Env, ExprTypeValidate, Type, TypeError},
+    validator::{
+        expressions::multiplication::MulExpr, Env, ExprTypeValidate, PrimitiveType, Type,
+        TypeComarison, TypeError,
+    },
 };
 
 #[derive(Debug)]
@@ -17,18 +20,43 @@ pub struct ArithmExprNode {
 
 // TODO:
 // devide operations by type
-// e.g. iadd, isub, fadd
+// e.g. iadd, isub, fadd, padd
 #[derive(Debug)]
 pub enum ArithmOperator {
-    Add, // +
-    Sub, // -
+    Iadd,
+    Isub,
+    Fadd,
+    Fsub,
+    Padd,
+    Psub,
+}
+
+impl ArithmOperator {
+    fn new(op: &arithmetic::ArithmOperator, typ: &Type) -> Self {
+        match op {
+            arithmetic::ArithmOperator::Add => match typ {
+                Type::Primitive(prim) => match prim {
+                    PrimitiveType::Int => Self::Iadd,
+                    PrimitiveType::Float => Self::Fadd,
+                },
+                Type::PtrTo(_) => Self::Padd,
+            },
+            arithmetic::ArithmOperator::Sub => match typ {
+                Type::Primitive(prim) => match prim {
+                    PrimitiveType::Int => Self::Isub,
+                    PrimitiveType::Float => Self::Fsub,
+                },
+                Type::PtrTo(_) => Self::Psub,
+            },
+        }
+    }
 }
 
 impl From<&arithmetic::ArithmOperator> for ArithmOperator {
     fn from(value: &arithmetic::ArithmOperator) -> Self {
         match value {
-            arithmetic::ArithmOperator::Add => Self::Add,
-            arithmetic::ArithmOperator::Sub => Self::Sub,
+            arithmetic::ArithmOperator::Add => Self::Iadd,
+            arithmetic::ArithmOperator::Sub => Self::Isub,
         }
     }
 }
@@ -37,20 +65,32 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
     type ValidatedType = (Type, ArithmExpr);
 
     fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
-        let (typ, left) = self.left.validate(env)?;
+        let (mut typ, left) = self.left.validate(env)?;
         let mut rights = vec![];
 
         for r in &self.rights {
             let (right_typ, right) = r.right.validate(env)?;
 
-            if !typ.equals(&right_typ) {
-                return Err(TypeError::Mismatch(typ, right_typ));
-            }
+            match typ.compare(&right_typ) {
+                TypeComarison::Equal => {}
+                TypeComarison::ImplicitlyConvertableTo => {
+                    typ = right_typ;
 
-            rights.push(ArithmExprNode {
-                op: ArithmOperator::from(&r.op),
-                right,
-            });
+                    rights.push(ArithmExprNode {
+                        op: ArithmOperator::new(&r.op, &typ),
+                        right,
+                    });
+                }
+                TypeComarison::ImplicitlyConvertableFrom => {
+                    rights.push(ArithmExprNode {
+                        op: ArithmOperator::new(&r.op, &typ),
+                        right,
+                    });
+                }
+                TypeComarison::ImplicitlyUnconvertable => {
+                    return Err(TypeError::Mismatch(typ, right_typ));
+                }
+            }
         }
 
         Ok((typ, ArithmExpr { left, rights }))
