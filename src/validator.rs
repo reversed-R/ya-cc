@@ -47,6 +47,14 @@ impl PrimitiveType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum TypeComarison {
+    Equal,
+    ImplicitlyConvertableTo,
+    ImplicitlyConvertableFrom,
+    ImplicitlyUnconvertable,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Primitive(PrimitiveType),
     PtrTo(Box<Type>),
@@ -57,6 +65,46 @@ impl Type {
         match self {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.aligned_size(),
+        }
+    }
+
+    pub fn compare(&self, other: &Self) -> TypeComarison {
+        match self {
+            Self::Primitive(prim) => match other {
+                Self::Primitive(other_prim) => match prim {
+                    PrimitiveType::Int => match other_prim {
+                        PrimitiveType::Int => TypeComarison::Equal,
+                        PrimitiveType::Float => TypeComarison::ImplicitlyConvertableTo,
+                    },
+                    PrimitiveType::Float => match other_prim {
+                        PrimitiveType::Int => TypeComarison::ImplicitlyConvertableFrom,
+                        PrimitiveType::Float => TypeComarison::Equal,
+                    },
+                },
+                Self::PtrTo(_) => {
+                    if prim == &PrimitiveType::Int {
+                        TypeComarison::ImplicitlyConvertableTo
+                    } else {
+                        TypeComarison::ImplicitlyUnconvertable
+                    }
+                }
+            },
+            Self::PtrTo(pointed) => match other {
+                Self::Primitive(other_prim) => match other_prim {
+                    PrimitiveType::Int => match other_prim {
+                        PrimitiveType::Int => TypeComarison::ImplicitlyConvertableFrom,
+                        PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
+                    },
+                    PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
+                },
+                Self::PtrTo(other_pointed) => {
+                    if pointed.equals(other_pointed) {
+                        TypeComarison::Equal
+                    } else {
+                        TypeComarison::ImplicitlyUnconvertable
+                    }
+                }
+            },
         }
     }
 
