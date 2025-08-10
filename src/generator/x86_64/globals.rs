@@ -26,7 +26,7 @@ impl Env {
 }
 
 impl Function {
-    pub fn generate(&self, name: &str, label_count: usize) -> usize {
+    pub fn generate(&self, name: &str) {
         let mut env = Env::new(name.to_string());
 
         println!("{}:", name);
@@ -54,7 +54,5 @@ impl Function {
             println!("pop rbp");
             println!("ret");
         }
-
-        env.label_count
     }
 }
