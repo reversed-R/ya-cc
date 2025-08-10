@@ -6,8 +6,8 @@ pub trait LocalGenerate {
 
 #[derive(Debug)]
 pub struct Env {
-    fname: String,
-    label_count: usize,
+    pub fname: String,
+    pub label_count: usize,
 }
 
 impl Env {

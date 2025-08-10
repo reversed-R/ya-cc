@@ -1,8 +1,8 @@
 use crate::{
-    generator::x86_64::globals::LocalGenerate, parser::symbols::statements::if_stmt::IfStmt,
+    generator::x86_64::globals::LocalGenerate, validator::statements::branch_stmt::BranchStmt,
 };
 
-impl LocalGenerate for IfStmt {
+impl LocalGenerate for BranchStmt {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
         let label_count = env.increment_label();
 
@@ -13,21 +13,21 @@ impl LocalGenerate for IfStmt {
 
         match &self.els {
             Some(els) => {
-                println!("je .Lelse{label_count}");
+                println!("je .L{}$else{label_count}", env.fname);
 
                 self.then.generate(env);
-                println!("jmp .Lend{label_count}");
+                println!("jmp .L{}$end{label_count}", env.fname);
 
-                println!(".Lelse{label_count}:");
+                println!(".L{}$else{label_count}:", env.fname);
                 els.generate(env);
             }
             None => {
-                println!("je .Lend{label_count}");
+                println!("je .L{}$end{label_count}", env.fname);
 
                 self.then.generate(env);
             }
         }
 
-        println!(".Lend{label_count}:");
+        println!(".L{}$end{label_count}:", env.fname);
     }
 }

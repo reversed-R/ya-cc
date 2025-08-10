@@ -6,7 +6,7 @@ pub mod primary;
 pub mod relational;
 pub mod unary;
 
-use crate::{generator::x86_64::globals::LocalGenerate, parser::symbols::expressions::Expr};
+use crate::{generator::x86_64::globals::LocalGenerate, validator::expressions::Expr};
 
 impl LocalGenerate for Expr {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
