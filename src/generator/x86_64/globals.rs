@@ -1,13 +1,4 @@
-use std::collections::HashMap;
-
-use crate::{
-    generator::x86_64::ARG_REGS,
-    parser::symbols::{
-        globals::FnDec,
-        statements::{var_dec::VarDec, Stmt},
-        Type,
-    },
-};
+use crate::{generator::x86_64::ARG_REGS, validator::globals::Function};
 
 pub trait LocalGenerate {
     fn generate(&self, env: &mut Env);
@@ -15,48 +6,16 @@ pub trait LocalGenerate {
 
 #[derive(Debug)]
 pub struct Env {
-    locals: HashMap<String, Type>,
+    fname: String,
     label_count: usize,
 }
 
 impl Env {
-    pub fn new_with_vars_size(
-        args: &[VarDec],
-        stmts: &[Stmt],
-        label_count: usize,
-    ) -> (Self, usize) {
-        let mut locals = HashMap::<String, Type>::new();
-        let mut offset: usize = 0;
-
-        for arg in args {
-            if !locals.contains_key(&arg.name) {
-                offset += arg.typ.aligned_size();
-
-                locals.insert(arg.name.clone(), arg.typ.clone());
-            }
+    pub fn new(fname: String) -> Self {
+        Self {
+            fname,
+            label_count: 0,
         }
-
-        for stmt in stmts {
-            if let Stmt::VarDec(vardec) = stmt {
-                if !locals.contains_key(&vardec.name) {
-                    offset += vardec.typ.aligned_size();
-
-                    locals.insert(vardec.name.clone(), vardec.typ.clone());
-                }
-            }
-        }
-
-        (
-            Self {
-                locals,
-                label_count,
-            },
-            offset,
-        )
-    }
-
-    pub fn offset(&self, id: &String) -> Option<usize> {
-        self.locals.get(id).map(|typ| typ.aligned_size())
     }
 
     pub fn increment_label(&mut self) -> usize {
@@ -66,22 +25,18 @@ impl Env {
     }
 }
 
-impl FnDec {
-    pub fn generate(&self, label_count: usize) -> usize {
-        let (mut env, vars_size) = Env::new_with_vars_size(&self.args, &self.stmts, label_count);
+impl Function {
+    pub fn generate(&self, name: &str, label_count: usize) -> usize {
+        let mut env = Env::new(name.to_string());
 
-        println!("{}:", self.name);
+        println!("{}:", name);
         println!("push rbp");
         println!("mov rbp, rsp");
-        println!("sub rsp, {vars_size}");
+        println!("sub rsp, {}", self.local_max_offset);
 
-        for (i, arg) in self.args.iter().enumerate() {
+        for i in 0..self.arg_count {
             if let Some(reg) = ARG_REGS.get(i) {
-                println!(
-                    "mov [rbp - {}], {}",
-                    env.offset(&arg.name).expect("Arg Not Found"),
-                    reg
-                );
+                println!("mov [rbp - {}], {}", i * 8, reg);
             } else {
                 panic!("Too Many Args for Function Call");
             }
@@ -91,7 +46,7 @@ impl FnDec {
             stmt.generate(&mut env);
         }
 
-        if self.name == "main" {
+        if name == "main" {
             println!("leave");
             println!("ret");
         } else {

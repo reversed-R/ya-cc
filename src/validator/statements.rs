@@ -53,7 +53,7 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
             Self::If(if_stmt) => Ok(Stmt::Branch(Box::new(if_stmt.validate(env)?))),
             Self::While(while_stmt) => Ok(Stmt::Loop(Box::new(while_stmt.validate(env)?))),
             Self::VarDec(var) => {
-                env.vars.insert(var.name.clone(), var.typ.clone())?;
+                env.insert_var(var.name.clone(), var.typ.clone())?;
 
                 Ok(Stmt::VarDec)
 

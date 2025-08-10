@@ -24,10 +24,13 @@ fn main() {
             let prog = parser::parse(tokens).expect("Parse Error");
             // println!("{:#?}", prog);
 
-            if let Err(e) = validator::validate(&prog) {
-                panic!("{:#?}", e);
-            } else {
-                generator::x86_64::generate(prog);
+            match validator::validate(&prog) {
+                Ok(validated_prog) => {
+                    generator::x86_64::generate(&validated_prog);
+                }
+                Err(e) => {
+                    panic!("{:#?}", e);
+                }
             }
         }
     } else {

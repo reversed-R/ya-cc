@@ -135,7 +135,7 @@ impl Type {
 }
 
 pub struct Program {
-    fns: HashMap<String, Function>,
+    pub fns: HashMap<String, Function>,
 }
 
 pub trait StmtTypeValidate {
@@ -155,6 +155,7 @@ pub struct Env<'parsed> {
     fns: HashMap<String, FnSignature<'parsed>>,
     vars: NestedScope,
     rtype: Option<Type>,
+    max_offset: usize,
 }
 
 impl<'parsed> Env<'parsed> {
@@ -171,6 +172,7 @@ impl<'parsed> Env<'parsed> {
             fns: fns_map,
             vars: NestedScope::new(),
             rtype: None,
+            max_offset: 0,
         }
     }
 
@@ -209,6 +211,17 @@ impl<'parsed> Env<'parsed> {
     pub fn end_scope(&mut self) {
         self.vars.pop_scope();
     }
+
+    pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
+        self.vars.insert(var, typ)?;
+
+        let cur = self.vars.get_max_offset();
+        if self.max_offset < cur {
+            self.max_offset = cur;
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -228,32 +241,20 @@ pub struct NestedScope {
 }
 
 impl NestedScope {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self { scopes: vec![] }
     }
 
-    pub fn push_scope(&mut self) {
+    fn push_scope(&mut self) {
         self.scopes.push(HashMap::new());
     }
 
-    pub fn pop_scope(&mut self) {
+    fn pop_scope(&mut self) {
         self.scopes.pop();
     }
 
-    pub fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset = &self
-            .scopes
-            .iter()
-            .map(|scope| {
-                scope
-                    .values()
-                    .map(|v| match v.addr {
-                        VarAddr::Local(offset) => offset,
-                    })
-                    .sum::<usize>()
-            })
-            .sum::<usize>()
-            + typ.aligned_size();
+    fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
+        let offset = self.get_max_offset() + typ.aligned_size();
 
         if let Some(last) = self.scopes.last_mut() {
             if !last.contains_key(&var) {
@@ -282,6 +283,20 @@ impl NestedScope {
         }
 
         None
+    }
+
+    fn get_max_offset(&self) -> usize {
+        self.scopes
+            .iter()
+            .map(|scope| {
+                scope
+                    .values()
+                    .map(|v| match v.addr {
+                        VarAddr::Local(offset) => offset,
+                    })
+                    .sum::<usize>()
+            })
+            .sum::<usize>()
     }
 }
 

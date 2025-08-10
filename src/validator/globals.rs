@@ -4,7 +4,9 @@ use crate::{
 };
 
 pub struct Function {
-    stmts: Vec<Stmt>,
+    pub stmts: Vec<Stmt>,
+    pub local_max_offset: usize,
+    pub arg_count: usize,
 }
 // 次のcodegenで、関数はただのラベルに続けてインストラクションを並べただけなのでいらない
 // args: Vec<Type>,
@@ -12,6 +14,7 @@ pub struct Function {
 
 impl StmtTypeValidate for FnDec {
     type ValidatedType = Function;
+
     fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         env.begin_local(&self.args, &self.rtype);
 
@@ -23,6 +26,10 @@ impl StmtTypeValidate for FnDec {
 
         env.end_local();
 
-        Ok(Function { stmts })
+        Ok(Function {
+            stmts,
+            local_max_offset: env.max_offset,
+            arg_count: self.args.len(),
+        })
     }
 }
