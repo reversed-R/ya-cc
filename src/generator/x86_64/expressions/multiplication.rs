@@ -1,6 +1,6 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    parser::symbols::expressions::multiplication::{MulExpr, MulOperator},
+    validator::expressions::multiplication::{MulExpr, MulOperator},
 };
 
 impl LocalGenerate for MulExpr {

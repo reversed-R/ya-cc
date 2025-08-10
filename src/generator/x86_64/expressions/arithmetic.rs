@@ -1,6 +1,6 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    parser::symbols::expressions::arithmetic::{ArithmExpr, ArithmOperator},
+    validator::expressions::arithmetic::{ArithmExpr, ArithmOperator},
 };
 
 impl LocalGenerate for ArithmExpr {

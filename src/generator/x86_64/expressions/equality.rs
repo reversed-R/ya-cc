@@ -1,6 +1,6 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    parser::symbols::expressions::equality::{EqualityExpr, EqualityOperator},
+    validator::expressions::equality::{EqualityExpr, EqualityOperator},
 };
 
 impl LocalGenerate for EqualityExpr {

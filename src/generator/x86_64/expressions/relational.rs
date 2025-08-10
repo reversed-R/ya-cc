@@ -1,6 +1,6 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    parser::symbols::expressions::relational::{RelationalExpr, RelationalOperator},
+    validator::expressions::relational::{RelationalExpr, RelationalOperator},
 };
 
 impl LocalGenerate for RelationalExpr {

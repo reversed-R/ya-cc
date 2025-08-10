@@ -1,20 +1,19 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    parser::symbols::expressions::{
-        assignment::{AssignExpr, AssignOperator},
-        primary::Primary,
+    validator::expressions::{
+        assignment::AssignExpr,
         unary::{RefUnaryOperator, UnaryOperator},
     },
 };
 
 impl LocalGenerate for AssignExpr {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
-        self.right.generate(env);
+        self.src.generate(env);
 
-        for ass in self.lefts.iter().rev() {
-            match ass.left.op {
+        for ass in self.dsts.iter().rev() {
+            match ass.dst.op {
                 UnaryOperator::Plus => {
-                    if ass.left.right.ops.is_empty() {
+                    if ass.dst.right.ops.is_empty() {
                         match &ass.left.right.right {
                             Primary::Identifier(id) => {
                                 if let Some(offset) = env.offset(id) {
@@ -74,13 +73,13 @@ impl LocalGenerate for AssignExpr {
         }
     }
 }
-
-impl AssignOperator {
-    fn generate(&self, dst: &str, src: &str) {
-        match self {
-            Self::Assign => {
-                println!("mov {dst}, {src}");
-            }
-        }
-    }
-}
+//
+// impl AssignOperator {
+//     fn generate(&self, dst: &str, src: &str) {
+//         match self {
+//             Self::Assign => {
+//                 println!("mov {dst}, {src}");
+//             }
+//         }
+//     }
+// }

@@ -1,19 +1,22 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    parser::symbols::expressions::{
-        primary::Primary,
-        unary::{RefUnary, RefUnaryOperator, Unary, UnaryOperator},
+    validator::{
+        expressions::{
+            primary::Primary,
+            unary::{RefUnaryOperator, Unary, UnaryOperator},
+        },
+        VarAddr,
     },
 };
 
 impl LocalGenerate for Unary {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
         match self.op {
-            UnaryOperator::Plus => {
-                self.right.generate(env);
+            UnaryOperator::None => {
+                generate_ref_unary(&self.refop, &self.right, env);
             }
-            UnaryOperator::Minus => {
-                self.right.generate(env);
+            UnaryOperator::Neg => {
+                generate_ref_unary(&self.refop, &self.right, env);
 
                 println!("pop rax");
                 println!("neg rax");
@@ -23,48 +26,36 @@ impl LocalGenerate for Unary {
     }
 }
 
-impl LocalGenerate for RefUnary {
-    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
-        // TODO:
-
-        if self.ops.is_empty() {
-            self.right.generate(env);
-        } else {
-            for (i, op) in self.ops.iter().rev().enumerate() {
-                if i == 0 {
-                    match op {
-                        RefUnaryOperator::Ref => {
-                            if let Primary::Identifier(id) = &self.right {
-                                println!("mov rax, rbp");
-                                println!(
-                                    "sub rax, {}",
-                                    env.offset(id).expect("Variable Not Found")
-                                );
-                                println!("push rax");
-                            } else {
-                                panic!("Expected Identifier");
-                            }
-                        }
-                        RefUnaryOperator::Deref => {
-                            self.right.generate(env);
-
-                            println!("pop rax");
-                            println!("mov rax, [rax]");
-                            println!("push rax");
-                        }
-                    }
-                } else {
-                    match op {
-                        RefUnaryOperator::Ref => {
-                            panic!("Expected Identifier");
-                        }
-                        RefUnaryOperator::Deref => {
-                            println!("pop rax");
-                            println!("mov rax, [rax]");
-                            println!("push rax");
-                        }
+fn generate_ref_unary(
+    refop: &RefUnaryOperator,
+    prim: &Primary,
+    env: &mut crate::generator::x86_64::globals::Env,
+) {
+    match refop {
+        RefUnaryOperator::Ref => {
+            if let Primary::Variable(var) = prim {
+                match var.addr {
+                    VarAddr::Local(offset) => {
+                        println!("mov rax, rbp");
+                        println!("sub rax, {}", offset);
+                        println!("push rax");
                     }
                 }
+            } else {
+                panic!("Expected Identifier");
+            }
+        }
+        RefUnaryOperator::Deref(count) => {
+            prim.generate(env);
+
+            println!("pop rax");
+            println!("mov rax, [rax]");
+            println!("push rax");
+
+            for _ in 0..*count {
+                println!("pop rax");
+                println!("mov rax, [rax]");
+                println!("push rax");
             }
         }
     }
