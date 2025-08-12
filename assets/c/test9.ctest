@@ -2,8 +2,7 @@ int main(){
   int x;
   int arr[3];
   
-  x = 1;
-  arr[0] = x;
+  arr[2] = 1;
   
-  return x;
+  return arr[2];
 }

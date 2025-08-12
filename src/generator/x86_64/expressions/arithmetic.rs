@@ -1,6 +1,9 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
-    validator::expressions::arithmetic::{ArithmExpr, ArithmOperator},
+    validator::{
+        expressions::arithmetic::{ArithmExpr, ArithmOperator},
+        PrimitiveType, Type,
+    },
 };
 
 impl LocalGenerate for ArithmExpr {
@@ -30,6 +33,10 @@ impl LocalGenerate for ArithmExpr {
 
                     println!("pop rdi");
                     println!("pop rax");
+                    println!(
+                        "imul rdi, {}",
+                        Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).aligned_size()
+                    );
                     println!("add rax, rdi");
                     println!("push rax");
                 }
@@ -38,6 +45,10 @@ impl LocalGenerate for ArithmExpr {
 
                     println!("pop rdi");
                     println!("pop rax");
+                    println!(
+                        "imul rdi, {}",
+                        Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).aligned_size()
+                    );
                     println!("sub rax, rdi");
                     println!("push rax");
                 }

@@ -5,7 +5,7 @@ int main(){
   
   x = 1;
   y = 2;
-  z = &y + 8;
+  z = &y + 1;
   *z = 3;
   return x;
 }

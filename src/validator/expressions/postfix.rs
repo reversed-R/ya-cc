@@ -15,7 +15,8 @@ use crate::{
 #[derive(Debug)]
 pub enum PostfixExpr {
     Primary(Primary),
-    Unary(Box<Unary>),
+    Unary(Box<Unary>), // NOTE: 
+                       // array[index] converted *(array + index)
 }
 
 impl ExprTypeValidate for postfix::PostfixExpr {
@@ -24,7 +25,11 @@ impl ExprTypeValidate for postfix::PostfixExpr {
     fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
         match self {
             Self::Primary(prim) => {
-                let (typ, prim) = prim.validate(env)?;
+                let (mut typ, prim) = prim.validate(env)?;
+                
+                if let Type::Array(atyp, _) = typ {
+                    typ = Type::PtrTo(atyp);
+                }
 
                 Ok((typ, PostfixExpr::Primary(prim)))
             }
@@ -112,10 +117,11 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                     },
                 };
 
+                println!("#...");
 
                 let (typ, u) = u.validate(env)?;
                 
-                println!("typ: {:#?}", typ);
+                println!("# typ: {:?}", typ);
 
                 Ok((typ, PostfixExpr::Unary(Box::new(u))))
             }

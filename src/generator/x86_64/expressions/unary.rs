@@ -51,10 +51,61 @@ fn generate_ref_unary(
 
             println!("pop rax");
 
-            for _ in 1..*count {
+            for _ in 0..*count {
                 println!("mov rax, [rax]");
             }
             println!("push rax");
         }
+    }
+}
+
+impl Unary {
+    pub fn generate_as_left(&self, env: &mut crate::generator::x86_64::globals::Env) {
+        // 左辺値として生成
+        println!("# unary as left ----");
+        match self.op {
+            UnaryOperator::None => match self.refop {
+                RefUnaryOperator::Ref => {
+                    panic!("Invalid Left Value");
+                }
+                RefUnaryOperator::Deref(count) => {
+                    match &self.right {
+                        PostfixExpr::Primary(prim) => match prim {
+                            Primary::Variable(var) => match var.addr {
+                                VarAddr::Local(offset) => {
+                                    println!("mov rax, rbp");
+                                    println!("sub rax, {offset}");
+                                    println!("push rax");
+                                }
+                            },
+                            Primary::Expr(expr) => {
+                                expr.generate(env);
+                            }
+                            Primary::FnCall(f) => {
+                                // TODO:
+                                panic!("TODO");
+                            }
+                            _ => {
+                                panic!("Invalid Left Value");
+                            }
+                        },
+                        PostfixExpr::Unary(unary) => {
+                            unary.generate_as_left(env);
+                        }
+                    }
+
+                    println!("pop rax");
+
+                    for _ in 1..count {
+                        println!("mov rax, [rax]");
+                    }
+                    println!("push rax");
+                }
+            },
+            UnaryOperator::Neg => {
+                panic!("Invalid Left Value");
+            }
+        }
+        println!("# ---- unary as left");
     }
 }

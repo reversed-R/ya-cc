@@ -2,7 +2,7 @@ use crate::{
     generator::x86_64::{globals::LocalGenerate, ARG_REGS},
     validator::{
         expressions::primary::{Literal, Primary},
-        VarAddr,
+        Type, VarAddr,
     },
 };
 
@@ -14,13 +14,19 @@ impl LocalGenerate for Primary {
                     println!("push {i}");
                 }
                 _ => {
-
                     // TODO:
+                    panic!("TODO");
                 }
             },
             Self::Variable(var) => match var.addr {
                 VarAddr::Local(offset) => {
-                    println!("push [rbp - {offset}]");
+                    if let Type::Array(_, _) = &var.typ {
+                        println!("mov rax, rbp");
+                        println!("sub rax, {offset}");
+                        println!("push rax");
+                    } else {
+                        println!("push [rbp - {offset}]");
+                    }
                 }
             },
             Self::FnCall(f) => {
@@ -37,8 +43,8 @@ impl LocalGenerate for Primary {
                 println!("call {}", f.name);
                 println!("push rax");
             }
-            _ => {
-                // TODO:
+            Self::Expr(expr) => {
+                expr.generate(env);
             }
         }
     }
