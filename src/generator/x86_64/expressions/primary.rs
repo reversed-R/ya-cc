@@ -20,7 +20,7 @@ impl LocalGenerate for Primary {
             },
             Self::Variable(var) => match var.addr {
                 VarAddr::Local(offset) => {
-                    println!("push [rbp - {}]", offset);
+                    println!("push [rbp - {offset}]");
                 }
             },
             Self::FnCall(f) => {

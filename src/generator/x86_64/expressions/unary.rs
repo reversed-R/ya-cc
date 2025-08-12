@@ -37,7 +37,7 @@ fn generate_ref_unary(
                 match var.addr {
                     VarAddr::Local(offset) => {
                         println!("mov rax, rbp");
-                        println!("sub rax, {}", offset);
+                        println!("sub rax, {offset}");
                         println!("push rax");
                     }
                 }
@@ -49,14 +49,11 @@ fn generate_ref_unary(
             prim.generate(env);
 
             println!("pop rax");
-            println!("mov rax, [rax]");
-            println!("push rax");
 
-            for _ in 0..*count {
-                println!("pop rax");
+            for _ in 1..*count {
                 println!("mov rax, [rax]");
-                println!("push rax");
             }
+            println!("push rax");
         }
     }
 }
