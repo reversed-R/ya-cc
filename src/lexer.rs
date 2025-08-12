@@ -53,11 +53,12 @@ pub fn tokenize(str: &str) -> Vec<Token> {
                             Token::Else,
                             Token::While,
                             Token::Return,
+                            Token::SizeOf,
                             Token::Int,
                         ];
 
                         for r in replacers {
-                            if &r.pattern() == &s {
+                            if r.pattern() == s {
                                 return r.to_owned();
                             }
                         }
@@ -102,7 +103,7 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
             }
         }
 
-        i = i + 1;
+        i += 1;
     }
 
     if last_index < str.len() {

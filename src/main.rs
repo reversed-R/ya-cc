@@ -26,6 +26,7 @@ fn main() {
 
             match validator::validate(&prog) {
                 Ok(validated_prog) => {
+                    // println!("{:#?}", validated_prog);
                     generator::x86_64::generate(&validated_prog);
                 }
                 Err(e) => {

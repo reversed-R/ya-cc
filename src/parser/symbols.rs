@@ -29,18 +29,3 @@ impl Parse for Program {
         Ok(prog)
     }
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum PrimitiveType {
-    Int,
-    Float,
-}
-
-impl PrimitiveType {
-    pub fn aligned_size(&self) -> usize {
-        match self {
-            Self::Int => 8,
-            Self::Float => 8,
-        }
-    }
-}

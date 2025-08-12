@@ -3,6 +3,7 @@ use crate::{
     validator::{statements::Stmt, Env, StmtTypeValidate, TypeError},
 };
 
+#[derive(Debug)]
 pub struct Function {
     pub stmts: Vec<Stmt>,
     pub local_max_offset: usize,

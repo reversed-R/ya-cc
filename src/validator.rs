@@ -134,6 +134,7 @@ impl Type {
     }
 }
 
+#[derive(Debug)]
 pub struct Program {
     pub fns: HashMap<String, Function>,
 }

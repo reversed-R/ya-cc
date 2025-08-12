@@ -5,8 +5,8 @@ use crate::{
 
 use super::primary::Primary;
 
-// Unary = ("+" | "-")? RefUnary
-// = ("+" | "-")? ("&", "*")* Primary
+// Unary = ("sizeof" | +" | "-")? RefUnary
+// = ("sizeof" | "+" | "-")? ("&", "*")* Primary
 #[derive(Debug)]
 pub struct Unary {
     pub op: UnaryOperator,
@@ -15,8 +15,9 @@ pub struct Unary {
 
 #[derive(Debug, PartialEq)]
 pub enum UnaryOperator {
-    Plus,  // +
-    Minus, // -
+    SizeOf, // sizeof
+    Plus,   // +
+    Minus,  // -
 }
 
 #[derive(Debug)]
@@ -36,9 +37,20 @@ impl Parse for Unary {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        // Unary = ("+" | "-")? RefUnary
+        // Unary = ("sizeof" | +" | "-")? RefUnary
         if let Some(t) = tokens.peek() {
             match t {
+                Token::SizeOf => {
+                    tokens.next();
+                    if let Ok(right) = RefUnary::consume(tokens) {
+                        Ok(Self {
+                            op: UnaryOperator::SizeOf,
+                            right,
+                        })
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
                 Token::Plus => {
                     tokens.next();
                     if let Ok(right) = RefUnary::consume(tokens) {

@@ -6,6 +6,7 @@ pub enum Token {
     Else,            // else
     While,           // while
     Return,          // return
+    SizeOf,          // sizeof
     Int,             // int (reserved word of type)
     LPare,           // (
     RPare,           // )
@@ -39,6 +40,7 @@ impl Token {
             Self::Else => "else".to_string(),
             Self::While => "while".to_string(),
             Self::Return => "return".to_string(),
+            Self::SizeOf => "sizeof".to_string(),
             Self::Int => "int".to_string(),
             Self::LPare => "(".to_string(),
             Self::RPare => ")".to_string(),

@@ -1,6 +1,9 @@
 use crate::{
     parser::symbols::expressions::unary,
-    validator::{expressions::primary::Primary, Env, ExprTypeValidate, Type, TypeError},
+    validator::{
+        expressions::primary::{Literal, Primary},
+        Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
+    },
 };
 
 #[derive(Debug)]
@@ -19,6 +22,7 @@ pub enum UnaryOperator {
 impl From<&unary::UnaryOperator> for UnaryOperator {
     fn from(value: &unary::UnaryOperator) -> Self {
         match value {
+            unary::UnaryOperator::SizeOf => Self::None,
             unary::UnaryOperator::Plus => Self::None,
             unary::UnaryOperator::Minus => Self::Neg,
         }
@@ -35,7 +39,7 @@ impl ExprTypeValidate for unary::Unary {
     type ValidatedType = (Type, Unary);
 
     fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
-        let (mut typ, right) = self.right.right.validate(env)?;
+        let (mut typ, mut right) = self.right.right.validate(env)?;
         let mut ref_count: isize = 0;
 
         for op in self.right.ops.iter().rev() {
@@ -57,26 +61,21 @@ impl ExprTypeValidate for unary::Unary {
 
         let op = UnaryOperator::from(&self.op);
 
+        let refop;
+
         if ref_count >= 0 {
-            Ok((
-                typ,
-                Unary {
-                    op,
-                    refop: RefUnaryOperator::Deref(ref_count as usize),
-                    right,
-                },
-            ))
+            refop = RefUnaryOperator::Deref(ref_count as usize);
         } else if ref_count == -1 {
-            Ok((
-                typ,
-                Unary {
-                    op,
-                    refop: RefUnaryOperator::Ref,
-                    right,
-                },
-            ))
+            refop = RefUnaryOperator::Ref;
         } else {
-            Err(TypeError::DerefNotAllowed(typ))
+            return Err(TypeError::DerefNotAllowed(typ));
         }
+
+        if let unary::UnaryOperator::SizeOf = &self.op {
+            typ = Type::Primitive(PrimitiveType::Int);
+            right = Primary::Literal(Literal::Int(typ.aligned_size() as i64));
+        }
+
+        Ok((typ, Unary { op, refop, right }))
     }
 }
