@@ -58,6 +58,7 @@ pub enum TypeComarison {
 pub enum Type {
     Primitive(PrimitiveType),
     PtrTo(Box<Type>),
+    Array(Box<Type>, usize),
 }
 
 impl Type {
@@ -65,10 +66,12 @@ impl Type {
         match self {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.aligned_size(),
+            Self::Array(typ, size) => typ.aligned_size() * size,
         }
     }
 
     pub fn compare(&self, other: &Self) -> TypeComarison {
+        // ただし、Arrayについてはその識別子単体が渡されたと考える
         match self {
             Self::Primitive(prim) => match other {
                 Self::Primitive(other_prim) => match prim {
@@ -88,6 +91,7 @@ impl Type {
                         TypeComarison::ImplicitlyUnconvertable
                     }
                 }
+                Self::Array(_, _) => TypeComarison::ImplicitlyUnconvertable,
             },
             Self::PtrTo(pointed) => match other {
                 Self::Primitive(other_prim) => match other_prim {
@@ -104,7 +108,15 @@ impl Type {
                         TypeComarison::ImplicitlyUnconvertable
                     }
                 }
+                Self::Array(atyp, _) => {
+                    if pointed.equals(atyp) {
+                        TypeComarison::ImplicitlyConvertableFrom
+                    } else {
+                        TypeComarison::ImplicitlyUnconvertable
+                    }
+                }
             },
+            Self::Array(atyp, _) => Self::PtrTo(Box::new(*atyp.clone())).compare(other),
         }
     }
 
@@ -118,6 +130,7 @@ impl Type {
                 Self::PtrTo(other_ptr) => ptr.equals(other_ptr),
                 _ => false,
             },
+            Self::Array(_, _) => false,
         }
     }
 

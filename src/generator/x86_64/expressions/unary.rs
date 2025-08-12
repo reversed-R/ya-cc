@@ -2,6 +2,7 @@ use crate::{
     generator::x86_64::globals::LocalGenerate,
     validator::{
         expressions::{
+            postfix::PostfixExpr,
             primary::Primary,
             unary::{RefUnaryOperator, Unary, UnaryOperator},
         },
@@ -28,12 +29,12 @@ impl LocalGenerate for Unary {
 
 fn generate_ref_unary(
     refop: &RefUnaryOperator,
-    prim: &Primary,
+    postfix: &PostfixExpr,
     env: &mut crate::generator::x86_64::globals::Env,
 ) {
     match refop {
         RefUnaryOperator::Ref => {
-            if let Primary::Variable(var) = prim {
+            if let PostfixExpr::Primary(Primary::Variable(var)) = postfix {
                 match var.addr {
                     VarAddr::Local(offset) => {
                         println!("mov rax, rbp");
@@ -46,7 +47,7 @@ fn generate_ref_unary(
             }
         }
         RefUnaryOperator::Deref(count) => {
-            prim.generate(env);
+            postfix.generate(env);
 
             println!("pop rax");
 

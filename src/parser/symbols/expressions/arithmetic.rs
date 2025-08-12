@@ -6,19 +6,19 @@ use crate::{
 use super::multiplication::MulExpr;
 
 // ArithmExpr = MulExpr ("+" MulExpr | "-" MulExpr)*
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArithmExpr {
     pub left: MulExpr,
     pub rights: Vec<ArithmExprNode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ArithmExprNode {
     pub op: ArithmOperator,
     pub right: MulExpr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ArithmOperator {
     Add, // +
     Sub, // -

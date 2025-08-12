@@ -1,7 +1,10 @@
 use crate::{
     parser::symbols::expressions::unary,
     validator::{
-        expressions::primary::{Literal, Primary},
+        expressions::{
+            postfix::PostfixExpr,
+            primary::{Literal, Primary},
+        },
         Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
@@ -10,7 +13,7 @@ use crate::{
 pub struct Unary {
     pub op: UnaryOperator,
     pub refop: RefUnaryOperator,
-    pub right: Primary,
+    pub right: PostfixExpr,
 }
 
 #[derive(Debug, PartialEq)]
@@ -73,7 +76,7 @@ impl ExprTypeValidate for unary::Unary {
 
         if let unary::UnaryOperator::SizeOf = &self.op {
             typ = Type::Primitive(PrimitiveType::Int);
-            right = Primary::Literal(Literal::Int(typ.aligned_size() as i64));
+            right = PostfixExpr::Primary(Primary::Literal(Literal::Int(typ.aligned_size() as i64)));
         }
 
         Ok((typ, Unary { op, refop, right }))

@@ -6,20 +6,20 @@ use crate::{
 use super::equality::EqualityExpr;
 
 // AssignExpr = (Unary "=")* EqualityExpr
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssignExpr {
     pub lefts: Vec<AssignExprNode>,
     pub right: EqualityExpr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssignExprNode {
     pub left: Unary,
     pub op: AssignOperator,
 }
 
 // now, only = can be used, but +=, -=, and so on will be used in the future
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum AssignOperator {
     Assign, // =
 }

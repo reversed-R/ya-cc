@@ -6,19 +6,19 @@ use crate::{
 use super::unary::Unary;
 
 // MulExpr = Primary ("*" Primary | "/" Primary)*
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MulExpr {
     pub left: Unary,
     pub rights: Vec<MulExprNode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MulExprNode {
     pub op: MulOperator,
     pub right: Unary,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum MulOperator {
     Mul, // *
     Div, // /

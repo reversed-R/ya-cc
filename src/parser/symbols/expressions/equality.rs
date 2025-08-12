@@ -6,19 +6,19 @@ use crate::{
 use super::relational::RelationalExpr;
 
 // EqualityExpr = RelationalExpr ("==" RelationalExpr | "!=" RelationalExpr)*
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EqualityExpr {
     pub left: RelationalExpr,
     pub rights: Vec<EqualityExprNode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EqualityExprNode {
     pub op: EqualityOperator,
     pub right: RelationalExpr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum EqualityOperator {
     Equal, // ==
     NotEq, // !=

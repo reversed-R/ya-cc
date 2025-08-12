@@ -1,8 +1,7 @@
 use crate::{
     parser::symbols::expressions::primary,
     validator::{
-        expressions::{arithmetic::ArithmExpr, Expr},
-        Env, ExprTypeValidate, PrimitiveType, Type, TypeError, Variable,
+        expressions::Expr, Env, ExprTypeValidate, PrimitiveType, Type, TypeError, Variable,
     },
 };
 
@@ -11,7 +10,7 @@ pub enum Primary {
     Literal(Literal),
     Variable(Variable),
     FnCall(FnCall),
-    Expr(Box<ArithmExpr>),
+    Expr(Box<Expr>),
 }
 
 #[derive(Debug)]

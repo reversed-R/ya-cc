@@ -40,6 +40,7 @@ impl ArithmOperator {
                     PrimitiveType::Float => Self::Fadd,
                 },
                 Type::PtrTo(_) => Self::Padd,
+                Type::Array(_, _) => Self::Padd, // WARN: is it true?
             },
             arithmetic::ArithmOperator::Sub => match typ {
                 Type::Primitive(prim) => match prim {
@@ -47,6 +48,7 @@ impl ArithmOperator {
                     PrimitiveType::Float => Self::Fsub,
                 },
                 Type::PtrTo(_) => Self::Psub,
+                Type::Array(_, _) => Self::Psub, // WARN: is it true?
             },
         }
     }

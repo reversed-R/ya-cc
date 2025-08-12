@@ -26,13 +26,34 @@ impl Parse for VarDec {
                     let typ = consume_scalar_type(primitive, tokens);
 
                     if let Some(Token::String(id)) = tokens.next() {
-                        if let Some(Token::SemiColon) = tokens.next() {
-                            Ok(Self {
-                                typ,
-                                name: id.clone(),
-                            })
+                        if let Some(Token::LBracket) = tokens.peek() {
+                            tokens.next();
+
+                            if let Some(Token::IntLiteral(i)) = tokens.next() {
+                                if let Some(Token::RBracket) = tokens.next() {
+                                    if let Some(Token::SemiColon) = tokens.next() {
+                                        Ok(Self {
+                                            typ: Type::Array(Box::new(typ), *i as usize),
+                                            name: id.clone(),
+                                        })
+                                    } else {
+                                        Err(ParseError::InvalidToken)
+                                    }
+                                } else {
+                                    Err(ParseError::InvalidToken)
+                                }
+                            } else {
+                                Err(ParseError::InvalidToken)
+                            }
                         } else {
-                            Err(ParseError::InvalidToken)
+                            if let Some(Token::SemiColon) = tokens.next() {
+                                Ok(Self {
+                                    typ,
+                                    name: id.clone(),
+                                })
+                            } else {
+                                Err(ParseError::InvalidToken)
+                            }
                         }
                     } else {
                         Err(ParseError::InvalidToken)

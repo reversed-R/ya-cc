@@ -3,6 +3,7 @@ use crate::{
     validator::{
         expressions::{
             assignment::AssignExpr,
+            postfix::PostfixExpr,
             primary::Primary,
             unary::{RefUnaryOperator, UnaryOperator},
         },
@@ -23,14 +24,19 @@ impl LocalGenerate for AssignExpr {
                     RefUnaryOperator::Deref(count) => {
                         if count == 0 {
                             match &ass.dst.right {
-                                Primary::Variable(var) => match var.addr {
-                                    VarAddr::Local(offset) => {
-                                        println!("pop rax");
-                                        println!("mov [rbp - {offset}], rax");
-                                        println!("push rax");
+                                PostfixExpr::Primary(prim) => match prim {
+                                    Primary::Variable(var) => match var.addr {
+                                        VarAddr::Local(offset) => {
+                                            println!("pop rax");
+                                            println!("mov [rbp - {offset}], rax");
+                                            println!("push rax");
+                                        }
+                                    },
+                                    _ => {
+                                        panic!("Invalid Left Value");
                                     }
                                 },
-                                _ => {
+                                PostfixExpr::Unary(_) => {
                                     panic!("Invalid Left Value");
                                 }
                             }

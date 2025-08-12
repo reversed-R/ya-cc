@@ -6,19 +6,19 @@ use crate::{
 use super::arithmetic::ArithmExpr;
 
 // RelationalExpr = ArithmExpr ("<" ArithmExpr | ">" ArithmExpr | "<=" ArithmExpr | ">=" ArithmExpr)*
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RelationalExpr {
     pub left: ArithmExpr,
     pub rights: Vec<RelationalExprNode>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RelationalExprNode {
     pub op: RelationalOperator,
     pub right: ArithmExpr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum RelationalOperator {
     Lesser,  // <
     Greater, // >

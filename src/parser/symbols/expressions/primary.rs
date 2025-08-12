@@ -3,24 +3,24 @@ use crate::{
     parser::{Parse, ParseError},
 };
 
-use super::{arithmetic::ArithmExpr, Expr};
+use super::Expr;
 
 // Primary = Literal | Identifier ( "(" ")" )? | "(" ArithmExpr ")"
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Primary {
     Literal(Literal),
     Identifier(String),
     FnCall(FnCall),
-    Expr(Box<ArithmExpr>),
+    Expr(Box<Expr>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Literal {
     Int(i64),
     Float(f64),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FnCall {
     pub name: String,
     pub args: Vec<Expr>,
@@ -78,7 +78,7 @@ impl Parse for Primary {
                     }
                 }
                 Token::LPare => {
-                    if let Ok(expr) = ArithmExpr::consume(tokens) {
+                    if let Ok(expr) = Expr::consume(tokens) {
                         if let Some(Token::RPare) = tokens.next() {
                             Ok(Self::Expr(Box::new(expr)))
                         } else {

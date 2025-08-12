@@ -1,32 +1,30 @@
 use crate::{
     lexer::token::Token,
-    parser::{Parse, ParseError},
+    parser::{symbols::expressions::postfix::PostfixExpr, Parse, ParseError},
 };
 
-use super::primary::Primary;
-
 // Unary = ("sizeof" | +" | "-")? RefUnary
-// = ("sizeof" | "+" | "-")? ("&", "*")* Primary
-#[derive(Debug)]
+// = ("sizeof" | "+" | "-")? ("&", "*")* PostfixExpr
+#[derive(Debug, Clone)]
 pub struct Unary {
     pub op: UnaryOperator,
     pub right: RefUnary,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum UnaryOperator {
     SizeOf, // sizeof
     Plus,   // +
     Minus,  // -
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RefUnary {
     pub ops: Vec<RefUnaryOperator>,
-    pub right: Primary,
+    pub right: PostfixExpr,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum RefUnaryOperator {
     Ref,   // &
     Deref, // *
@@ -97,7 +95,7 @@ impl Parse for RefUnary {
     ) -> Result<Self::SelfType, ParseError> {
         let mut ops: Vec<RefUnaryOperator> = vec![];
 
-        // RefUnary = ("&" | "*")* Primary
+        // RefUnary = ("&" | "*")* PostfixExpr
         while let Some(t) = tokens.peek() {
             match t {
                 Token::Ampersand => {
@@ -116,7 +114,7 @@ impl Parse for RefUnary {
             }
         }
 
-        if let Ok(right) = Primary::consume(tokens) {
+        if let Ok(right) = PostfixExpr::consume(tokens) {
             Ok(Self { ops, right })
         } else {
             Err(ParseError::InvalidToken)
