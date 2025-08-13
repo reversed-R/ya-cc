@@ -70,7 +70,7 @@ impl From<&arithmetic::ArithmOperator> for ArithmOperator {
 impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::ArithmExpr {
     type ValidatedType = (Type, ArithmExpr);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (mut typ, left) = self.left.validate(env)?;
         let mut rights = vec![];
 

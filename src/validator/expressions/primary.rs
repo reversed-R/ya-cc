@@ -18,6 +18,7 @@ pub enum Literal {
     Int(i64),
     Float(f64),
     Char(u8),
+    String(usize),
 }
 
 #[derive(Debug)]
@@ -29,7 +30,7 @@ pub struct FnCall {
 impl ExprTypeValidate for primary::Primary {
     type ValidatedType = (Type, Primary);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         match self {
             Self::Literal(lit) => match lit {
                 primary::Literal::Int(i) => Ok((
@@ -46,6 +47,22 @@ impl ExprTypeValidate for primary::Primary {
                     Type::Primitive(PrimitiveType::Char),
                     Primary::Literal(Literal::Char(*c)),
                 )),
+                primary::Literal::StringLiteral(s) => {
+                    if let Some(id) = env.string_literals.get(s) {
+                        Ok((
+                            Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
+                            Primary::Literal(Literal::String(*id)),
+                        ))
+                    } else {
+                        let id = env.string_literals.values().len();
+                        env.string_literals.insert(s.clone(), id);
+                        Ok((
+                            Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
+                            Primary::Literal(Literal::String(id)),
+                        ))
+                    }
+                    // TODO:
+                }
             },
             Self::Identifier(id) => {
                 let var = env
@@ -61,42 +78,47 @@ impl ExprTypeValidate for primary::Primary {
                 Ok((typ, Primary::Expr(Box::new(expr))))
             }
             Self::FnCall(fcalling) => {
-                if let Some(fcallee) = env.fns.get(&fcalling.name) {
-                    let mut i = 0;
-                    let mut args = vec![];
+                env.fns
+                    .get(&fcalling.name)
+                    .ok_or(TypeError::FunctionNotFound(fcalling.name.clone()))?;
 
-                    while let Some(acalling) = fcalling.args.get(i) {
-                        let (acalling_typ, acalling) = acalling.validate(env)?;
+                let mut i = 0;
+                let mut args = vec![];
 
-                        if let Some(acallee) = fcallee.args.get(i) {
-                            if !acalling_typ.equals(&acallee.typ) {
-                                return Err(TypeError::ArgumentMismatch(
-                                    Some(acallee.typ.clone()),
-                                    Some(acalling_typ),
-                                ));
-                            }
-                        } else {
-                            return Err(TypeError::ArgumentMismatch(None, Some(acalling_typ)));
-                        }
+                while let Some(acalling) = fcalling.args.get(i) {
+                    let (acalling_typ, acalling) = acalling.validate(env)?;
 
-                        i += 1;
-                        args.push(acalling);
-                    }
-
+                    let fcallee = env.fns.get(&fcalling.name).unwrap();
                     if let Some(acallee) = fcallee.args.get(i) {
-                        Err(TypeError::ArgumentMismatch(Some(acallee.typ.clone()), None))
+                        if !acalling_typ.equals(&acallee.typ) {
+                            return Err(TypeError::ArgumentMismatch(
+                                Some(acallee.typ.clone()),
+                                Some(acalling_typ),
+                            ));
+                        }
                     } else {
-                        Ok((
-                            fcallee.rtype.clone(),
-                            Primary::FnCall(FnCall {
-                                name: fcalling.name.clone(),
-                                args,
-                            }),
-                        ))
+                        return Err(TypeError::ArgumentMismatch(None, Some(acalling_typ)));
                     }
-                } else {
-                    Err(TypeError::FunctionNotFound(fcalling.name.clone()))
+
+                    i += 1;
+                    args.push(acalling);
                 }
+
+                let fcallee = env.fns.get(&fcalling.name).unwrap();
+                if let Some(acallee) = fcallee.args.get(i) {
+                    Err(TypeError::ArgumentMismatch(Some(acallee.typ.clone()), None))
+                } else {
+                    Ok((
+                        fcallee.rtype.clone(),
+                        Primary::FnCall(FnCall {
+                            name: fcalling.name.clone(),
+                            args,
+                        }),
+                    ))
+                }
+                // } else {
+                //     Err(TypeError::FunctionNotFound(fcalling.name.clone()))
+                // }
             }
         }
     }

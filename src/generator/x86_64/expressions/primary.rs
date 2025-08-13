@@ -16,6 +16,10 @@ impl LocalGenerate for Primary {
                 Literal::Char(c) => {
                     println!("push {c}");
                 }
+                Literal::String(s) => {
+                    println!("lea rax, .L{s}[rip]");
+                    println!("push rax");
+                }
                 _ => {
                     // TODO:
                     panic!("TODO");

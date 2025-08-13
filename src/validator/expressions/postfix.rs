@@ -22,7 +22,7 @@ pub enum PostfixExpr {
 impl ExprTypeValidate for postfix::PostfixExpr {
     type ValidatedType = (Type, PostfixExpr);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         match self {
             Self::Primary(prim) => {
                 let (mut typ, prim) = prim.validate(env)?;

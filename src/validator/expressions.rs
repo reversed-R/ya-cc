@@ -17,7 +17,7 @@ pub struct Expr(pub AssignExpr);
 impl ExprTypeValidate for crate::parser::symbols::expressions::Expr {
     type ValidatedType = (Type, Expr);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (typ, ass) = self.0.validate(env)?;
 
         Ok((typ, Expr(ass)))

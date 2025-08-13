@@ -36,7 +36,7 @@ impl From<&assignment::AssignOperator> for AssignOperator {
 impl ExprTypeValidate for assignment::AssignExpr {
     type ValidatedType = (Type, AssignExpr);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (src_typ, src) = self.right.validate(env)?;
         let mut typ = src_typ;
         let mut dsts = vec![];

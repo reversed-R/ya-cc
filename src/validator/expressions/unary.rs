@@ -41,7 +41,7 @@ pub enum RefUnaryOperator {
 impl ExprTypeValidate for unary::Unary {
     type ValidatedType = (Type, Unary);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (mut typ, mut right) = self.right.right.validate(env)?;
         let mut ref_count: isize = 0;
 

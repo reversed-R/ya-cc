@@ -33,7 +33,10 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
         }
     }
 
-    Ok(Program { globals })
+    Ok(Program {
+        globals,
+        string_literals: env.string_literals,
+    })
 }
 
 #[derive(Debug)]
@@ -207,6 +210,7 @@ impl Type {
 
 #[derive(Debug)]
 pub struct Program {
+    pub string_literals: HashMap<String, usize>,
     pub globals: HashMap<String, Globals>,
 }
 
@@ -225,7 +229,7 @@ pub trait StmtTypeValidate {
 pub trait ExprTypeValidate {
     type ValidatedType;
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError>;
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError>;
 }
 
 #[derive(Debug)]
@@ -234,6 +238,7 @@ pub struct Env<'parsed> {
     vars: NestedScope,
     rtype: Option<Type>,
     local_max_offset: usize,
+    string_literals: HashMap<String, usize>,
 }
 
 impl<'parsed> Env<'parsed> {
@@ -263,6 +268,7 @@ impl<'parsed> Env<'parsed> {
             vars,
             rtype: None,
             local_max_offset: 0,
+            string_literals: HashMap::new(),
         })
     }
 

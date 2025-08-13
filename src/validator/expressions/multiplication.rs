@@ -33,7 +33,7 @@ impl From<&multiplication::MulOperator> for MulOperator {
 impl ExprTypeValidate for crate::parser::symbols::expressions::multiplication::MulExpr {
     type ValidatedType = (Type, MulExpr);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (typ, left) = self.left.validate(env)?;
         let mut rights = vec![];
 

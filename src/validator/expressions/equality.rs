@@ -33,7 +33,7 @@ impl From<&equality::EqualityOperator> for EqualityOperator {
 impl ExprTypeValidate for equality::EqualityExpr {
     type ValidatedType = (Type, EqualityExpr);
 
-    fn validate(&self, env: &Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (typ, left) = self.left.validate(env)?;
         let mut rights = vec![];
 
