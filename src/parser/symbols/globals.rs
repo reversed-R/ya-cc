@@ -28,6 +28,9 @@ impl Parse for Globals {
                 Token::Int => {
                     primitive = PrimitiveType::Int;
                 }
+                Token::Char => {
+                    primitive = PrimitiveType::Char;
+                }
                 _ => {
                     return Err(ParseError::InvalidToken);
                 }

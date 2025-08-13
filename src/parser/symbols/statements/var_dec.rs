@@ -22,42 +22,47 @@ impl Parse for VarDec {
             match t {
                 Token::Int => {
                     primitive = PrimitiveType::Int;
+                }
+                Token::Char => {
+                    primitive = PrimitiveType::Char;
+                }
+                _ => {
+                    return Err(ParseError::InvalidToken);
+                }
+            }
 
-                    let typ = consume_scalar_type(primitive, tokens);
+            let typ = consume_scalar_type(primitive, tokens);
 
-                    if let Some(Token::String(id)) = tokens.next() {
-                        if let Some(Token::LBracket) = tokens.peek() {
-                            tokens.next();
+            if let Some(Token::String(id)) = tokens.next() {
+                if let Some(Token::LBracket) = tokens.peek() {
+                    tokens.next();
 
-                            if let Some(Token::IntLiteral(i)) = tokens.next() {
-                                if let Some(Token::RBracket) = tokens.next() {
-                                    if let Some(Token::SemiColon) = tokens.next() {
-                                        Ok(Self {
-                                            typ: Type::Array(Box::new(typ), *i as usize),
-                                            name: id.clone(),
-                                        })
-                                    } else {
-                                        Err(ParseError::InvalidToken)
-                                    }
-                                } else {
-                                    Err(ParseError::InvalidToken)
-                                }
+                    if let Some(Token::IntLiteral(i)) = tokens.next() {
+                        if let Some(Token::RBracket) = tokens.next() {
+                            if let Some(Token::SemiColon) = tokens.next() {
+                                Ok(Self {
+                                    typ: Type::Array(Box::new(typ), *i as usize),
+                                    name: id.clone(),
+                                })
                             } else {
                                 Err(ParseError::InvalidToken)
                             }
-                        } else if let Some(Token::SemiColon) = tokens.next() {
-                            Ok(Self {
-                                typ,
-                                name: id.clone(),
-                            })
                         } else {
                             Err(ParseError::InvalidToken)
                         }
                     } else {
                         Err(ParseError::InvalidToken)
                     }
+                } else if let Some(Token::SemiColon) = tokens.next() {
+                    Ok(Self {
+                        typ,
+                        name: id.clone(),
+                    })
+                } else {
+                    Err(ParseError::InvalidToken)
                 }
-                _ => Err(ParseError::InvalidToken),
+            } else {
+                Err(ParseError::InvalidToken)
             }
         } else {
             Err(ParseError::InvalidToken)

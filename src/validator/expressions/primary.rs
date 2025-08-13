@@ -36,7 +36,8 @@ impl ExprTypeValidate for primary::Primary {
                     Primary::Literal(Literal::Int(*i)),
                 )),
                 primary::Literal::Float(f) => Ok((
-                    Type::Primitive(PrimitiveType::Float),
+                    // Type::Primitive(PrimitiveType::Float),
+                    Type::Primitive(PrimitiveType::Int),
                     Primary::Literal(Literal::Float(*f)),
                 )),
             },

@@ -55,6 +55,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
                             Token::Return,
                             Token::SizeOf,
                             Token::Int,
+                            Token::Char,
                         ];
 
                         for r in replacers {
@@ -82,18 +83,17 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
     while i < str.len() {
         for d in delims {
             if (|p: &str| {
-                if i + p.len() - 1 < str.len()
-                    && p == &str[i..i + p.len()] {
-                        if i - last_index > 0 {
-                            tokens.push(Token::String(str[last_index..i].to_string()));
-                        }
-                        tokens.push(d.clone());
-
-                        last_index = i + p.len();
-                        i = i + p.len() - 1;
-
-                        return true;
+                if i + p.len() - 1 < str.len() && p == &str[i..i + p.len()] {
+                    if i - last_index > 0 {
+                        tokens.push(Token::String(str[last_index..i].to_string()));
                     }
+                    tokens.push(d.clone());
+
+                    last_index = i + p.len();
+                    i = i + p.len() - 1;
+
+                    return true;
+                }
 
                 false
             })(&d.pattern())

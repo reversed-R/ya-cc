@@ -35,7 +35,7 @@ impl LocalGenerate for ArithmExpr {
                     println!("pop rax");
                     println!(
                         "imul rdi, {}",
-                        Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).aligned_size()
+                        Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
                     );
                     println!("add rax, rdi");
                     println!("push rax");
@@ -47,7 +47,7 @@ impl LocalGenerate for ArithmExpr {
                     println!("pop rax");
                     println!(
                         "imul rdi, {}",
-                        Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).aligned_size()
+                        Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
                     );
                     println!("sub rax, rdi");
                     println!("push rax");

@@ -29,6 +29,8 @@ pub enum ArithmOperator {
     Fsub,
     Padd,
     Psub,
+    Cadd,
+    Csub,
 }
 
 impl ArithmOperator {
@@ -37,7 +39,8 @@ impl ArithmOperator {
             arithmetic::ArithmOperator::Add => match typ {
                 Type::Primitive(prim) => match prim {
                     PrimitiveType::Int => Self::Iadd,
-                    PrimitiveType::Float => Self::Fadd,
+                    // PrimitiveType::Float => Self::Fadd,
+                    PrimitiveType::Char => Self::Cadd,
                 },
                 Type::PtrTo(_) => Self::Padd,
                 Type::Array(_, _) => Self::Padd, // WARN: is it true?
@@ -45,7 +48,8 @@ impl ArithmOperator {
             arithmetic::ArithmOperator::Sub => match typ {
                 Type::Primitive(prim) => match prim {
                     PrimitiveType::Int => Self::Isub,
-                    PrimitiveType::Float => Self::Fsub,
+                    // PrimitiveType::Float => Self::Fsub,
+                    PrimitiveType::Char => Self::Csub,
                 },
                 Type::PtrTo(_) => Self::Psub,
                 Type::Array(_, _) => Self::Psub, // WARN: is it true?

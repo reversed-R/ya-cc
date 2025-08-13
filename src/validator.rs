@@ -50,16 +50,34 @@ pub enum TypeError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum PrimitiveType {
     Int,
-    Float,
+    // Float,
+    Char,
 }
 
 impl PrimitiveType {
-    pub fn aligned_size(&self) -> usize {
+    pub fn size(&self) -> usize {
         match self {
             Self::Int => 8,
-            Self::Float => 8,
+            // Self::Float => 8,
+            Self::Char => 1,
         }
     }
+
+    pub fn align(&self) -> usize {
+        match self {
+            Self::Int => 8,
+            // Self::Float => 8,
+            Self::Char => 1,
+        }
+    }
+
+    // pub fn aligned_size(&self) -> usize {
+    //     match self {
+    //         Self::Int => 8,
+    //         // Self::Float => 8,
+    //         Self::Char => 1,
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -78,13 +96,29 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn aligned_size(&self) -> usize {
+    pub fn size(&self) -> usize {
         match self {
             Self::PtrTo(_) => 8,
-            Self::Primitive(p) => p.aligned_size(),
-            Self::Array(typ, size) => typ.aligned_size() * size,
+            Self::Primitive(p) => p.size(),
+            Self::Array(typ, size) => typ.size() * size,
         }
     }
+
+    pub fn align(&self) -> usize {
+        match self {
+            Self::PtrTo(_) => 8,
+            Self::Primitive(p) => p.align(),
+            Self::Array(typ, _) => typ.align(),
+        }
+    }
+
+    // pub fn aligned_size(&self) -> usize {
+    //     match self {
+    //         Self::PtrTo(_) => 8,
+    //         Self::Primitive(p) => p.aligned_size(),
+    //         Self::Array(typ, size) => typ.aligned_size() * size,
+    //     }
+    // }
 
     pub fn compare(&self, other: &Self) -> TypeComarison {
         // ただし、Arrayについてはその識別子単体が渡されたと考える
@@ -93,11 +127,18 @@ impl Type {
                 Self::Primitive(other_prim) => match prim {
                     PrimitiveType::Int => match other_prim {
                         PrimitiveType::Int => TypeComarison::Equal,
-                        PrimitiveType::Float => TypeComarison::ImplicitlyConvertableTo,
+                        // PrimitiveType::Float => TypeComarison::ImplicitlyConvertableTo,
+                        PrimitiveType::Char => TypeComarison::ImplicitlyConvertableFrom,
                     },
-                    PrimitiveType::Float => match other_prim {
-                        PrimitiveType::Int => TypeComarison::ImplicitlyConvertableFrom,
-                        PrimitiveType::Float => TypeComarison::Equal,
+                    // PrimitiveType::Float => match other_prim {
+                    //     PrimitiveType::Int => TypeComarison::ImplicitlyConvertableFrom,
+                    //     PrimitiveType::Float => TypeComarison::Equal,
+                    //     PrimitiveType::Char => TypeComarison::ImplicitlyUnconvertable, // ??
+                    // },
+                    PrimitiveType::Char => match other_prim {
+                        PrimitiveType::Int => TypeComarison::ImplicitlyConvertableTo,
+                        // PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable, // ??
+                        PrimitiveType::Char => TypeComarison::Equal,
                     },
                 },
                 Self::PtrTo(_) => {
@@ -113,9 +154,10 @@ impl Type {
                 Self::Primitive(other_prim) => match other_prim {
                     PrimitiveType::Int => match other_prim {
                         PrimitiveType::Int => TypeComarison::ImplicitlyConvertableFrom,
-                        PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
+                        _ => TypeComarison::ImplicitlyUnconvertable, // PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
                     },
-                    PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
+                    // PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
+                    PrimitiveType::Char => TypeComarison::ImplicitlyUnconvertable,
                 },
                 Self::PtrTo(other_pointed) => {
                     if pointed.equals(other_pointed) {
@@ -305,7 +347,8 @@ impl NestedScope {
     }
 
     fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset = self.get_current_local_max_offset() + typ.aligned_size();
+        let offset =
+            (self.get_current_local_max_offset() + typ.size()).next_multiple_of(typ.align());
 
         if let Some(last) = self.scopes.last_mut() {
             if !last.contains_key(&var) {
