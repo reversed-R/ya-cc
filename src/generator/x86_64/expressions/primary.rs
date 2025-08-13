@@ -40,6 +40,8 @@ impl LocalGenerate for Primary {
                 }
             },
             Self::FnCall(f) => {
+                let id = env.increment_label();
+
                 for (i, arg) in f.args.iter().enumerate() {
                     arg.generate(env);
 
@@ -50,7 +52,19 @@ impl LocalGenerate for Primary {
                     }
                 }
 
+                println!("mov rax, rsp");
+                println!("and rax, 0xf");
+                println!("cmp rax, 0");
+                println!("je .L.FNCALL{id}.ALIGNED");
+                println!("sub rsp, 8");
+                println!("mov al, 0");
                 println!("call {}", f.name);
+                println!("add rsp, 8");
+                println!("jmp .L.FNCALL{id}.END");
+                println!(".L.FNCALL{id}.ALIGNED:");
+                println!("mov al, 0");
+                println!("call {}", f.name);
+                println!(".L.FNCALL{id}.END:");
                 println!("push rax");
             }
             Self::Expr(expr) => {

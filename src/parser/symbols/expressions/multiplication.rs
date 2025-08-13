@@ -22,6 +22,7 @@ pub struct MulExprNode {
 pub enum MulOperator {
     Mul, // *
     Div, // /
+    Mod, // %
 }
 
 impl MulExpr {
@@ -59,6 +60,12 @@ impl Parse for MulExpr {
                         tokens.next();
                         if let Ok(right) = Unary::consume(tokens) {
                             mul.push(MulOperator::Div, right);
+                        }
+                    }
+                    Token::Percent => {
+                        tokens.next();
+                        if let Ok(right) = Unary::consume(tokens) {
+                            mul.push(MulOperator::Mod, right);
                         }
                     }
                     _ => {

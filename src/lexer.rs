@@ -90,6 +90,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
         Token::Minus,     // -
         Token::Asterisk,  // *
         Token::Slash,     // /
+        Token::Percent,   // %
         Token::Ampersand, // &
         Token::Lesser,    // <
         Token::Greater,   // >

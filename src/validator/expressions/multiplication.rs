@@ -19,6 +19,7 @@ pub struct MulExprNode {
 pub enum MulOperator {
     Mul,
     Div,
+    Mod,
 }
 
 impl From<&multiplication::MulOperator> for MulOperator {
@@ -26,6 +27,7 @@ impl From<&multiplication::MulOperator> for MulOperator {
         match value {
             multiplication::MulOperator::Mul => MulOperator::Mul,
             multiplication::MulOperator::Div => MulOperator::Div,
+            multiplication::MulOperator::Mod => MulOperator::Mod,
         }
     }
 }

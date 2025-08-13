@@ -26,6 +26,15 @@ impl LocalGenerate for MulExpr {
                     println!("idiv rdi");
                     println!("push rax");
                 }
+                MulOperator::Mod => {
+                    mul.right.generate(env);
+
+                    println!("pop rdi");
+                    println!("pop rax");
+                    println!("cqo");
+                    println!("idiv rdi");
+                    println!("push rdx");
+                }
             }
         }
     }

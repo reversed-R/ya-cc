@@ -32,7 +32,7 @@ impl Function {
         println!("{name}:");
         println!("push rbp");
         println!("mov rbp, rsp");
-        println!("sub rsp, {}", self.local_max_offset);
+        println!("sub rsp, {}", self.local_max_offset.next_multiple_of(8));
 
         for i in 0..self.arg_count {
             if let Some(reg) = ARG_REGS.get(i) {
