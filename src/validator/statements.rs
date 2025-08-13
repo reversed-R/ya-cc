@@ -6,7 +6,7 @@ pub mod vardec_stmt;
 use crate::validator::{
     expressions::Expr,
     statements::{branch_stmt::BranchStmt, loop_stmt::LoopStmt},
-    Env, ExprTypeValidate, StmtTypeValidate, TypeError,
+    Env, ExprTypeValidate, StmtTypeValidate, TypeComarison, TypeError,
 };
 
 #[derive(Debug)]
@@ -41,10 +41,10 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
                 let (expr_typ, expr) = expr.validate(env)?;
 
                 if let Some(rtype) = &env.rtype {
-                    if expr_typ.equals(rtype) {
-                        Ok(Stmt::Return(expr))
-                    } else {
-                        Err(TypeError::Mismatch(rtype.clone(), expr_typ))
+                    match rtype.compare(&expr_typ) {
+                        TypeComarison::Equal => Ok(Stmt::Return(expr)),
+                        TypeComarison::ImplicitlyConvertableFrom => Ok(Stmt::Return(expr)),
+                        _ => Err(TypeError::Mismatch(rtype.clone(), expr_typ)),
                     }
                 } else {
                     Err(TypeError::OutOfScopes)

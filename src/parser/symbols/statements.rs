@@ -71,6 +71,13 @@ impl Parse for Stmt {
                         Err(ParseError::InvalidToken)
                     }
                 }
+                Token::Char => {
+                    if let Ok(vardec) = VarDec::consume(tokens) {
+                        Ok(Self::VarDec(vardec))
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
+                }
                 _ => {
                     if let Ok(expr) = ExprStmt::consume(tokens) {
                         Ok(Self::Expr(expr.expr))

@@ -13,6 +13,9 @@ impl LocalGenerate for Primary {
                 Literal::Int(i) => {
                     println!("push {i}");
                 }
+                Literal::Char(c) => {
+                    println!("push {c}");
+                }
                 _ => {
                     // TODO:
                     panic!("TODO");

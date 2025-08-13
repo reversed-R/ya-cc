@@ -23,7 +23,7 @@ fn main() {
             // eprintln!("{:?}", tokens);
 
             let prog = parser::parse(tokens).expect("Parse Error");
-            eprintln!("{:#?}", prog);
+            // eprintln!("{:#?}", prog);
 
             match validator::validate(&prog) {
                 Ok(validated_prog) => {
