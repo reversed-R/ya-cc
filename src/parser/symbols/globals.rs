@@ -11,7 +11,8 @@ use super::{statements::block::BlockStmt, Stmt};
 
 #[derive(Debug)]
 pub enum Globals {
-    FnDec(FnDec),
+    FnDef(FnDef),
+    FnDeclare(FnDeclare),
     VarDec(VarDec),
 }
 
@@ -41,15 +42,29 @@ impl Parse for Globals {
             if let Some(Token::String(name)) = tokens.next() {
                 if let Some(Token::LPare) = tokens.peek() {
                     if let Ok(args) = ArgsDec::consume(tokens) {
-                        if let Ok(block) = BlockStmt::consume(tokens) {
-                            Ok(Self::FnDec(FnDec {
-                                name: name.clone(),
-                                args: args.args,
-                                stmts: block.stmts,
-                                rtype: typ,
-                            }))
-                        } else {
-                            Err(ParseError::InvalidToken)
+                        match tokens.peek() {
+                            Some(Token::SemiColon) => {
+                                tokens.next();
+
+                                Ok(Self::FnDeclare(FnDeclare {
+                                    name: name.clone(),
+                                    args: args.args,
+                                    rtype: typ,
+                                }))
+                            }
+                            Some(Token::LBrace) => {
+                                if let Ok(block) = BlockStmt::consume(tokens) {
+                                    Ok(Self::FnDef(FnDef {
+                                        name: name.clone(),
+                                        args: args.args,
+                                        stmts: block.stmts,
+                                        rtype: typ,
+                                    }))
+                                } else {
+                                    Err(ParseError::InvalidToken)
+                                }
+                            }
+                            _ => Err(ParseError::InvalidToken),
                         }
                     } else {
                         Err(ParseError::InvalidToken)
@@ -74,58 +89,19 @@ impl Parse for Globals {
 }
 
 #[derive(Debug)]
-pub struct FnDec {
+pub struct FnDeclare {
+    pub name: String,
+    pub args: Vec<VarDec>,
+    pub rtype: Type,
+}
+
+#[derive(Debug)]
+pub struct FnDef {
     pub name: String,
     pub args: Vec<VarDec>,
     pub stmts: Vec<Stmt>,
     pub rtype: Type,
 }
-
-// impl Parse for FnDec {
-//     type SelfType = Self;
-//
-//     fn consume(
-//         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
-//     ) -> Result<Self::SelfType, ParseError> {
-//         let primitive: PrimitiveType;
-//
-//         if let Some(t) = tokens.next() {
-//             match t {
-//                 Token::Int => {
-//                     primitive = PrimitiveType::Int;
-//                 }
-//                 _ => {
-//                     return Err(ParseError::InvalidToken);
-//                 }
-//             }
-//
-//             if let Some(Token::String(name)) = tokens.next() {
-//                 if let Some(Token::LPare) = tokens.peek() {
-//                     if let Ok(args) = ArgsDec::consume(tokens) {
-//                         if let Ok(block) = BlockStmt::consume(tokens) {
-//                             Ok(Self {
-//                                 name: name.clone(),
-//                                 args: args.args,
-//                                 stmts: block.stmts,
-//                                 rtype: Type::Primitive(primitive),
-//                             })
-//                         } else {
-//                             Err(ParseError::InvalidToken)
-//                         }
-//                     } else {
-//                         Err(ParseError::InvalidToken)
-//                     }
-//                 } else {
-//                     Err(ParseError::InvalidToken)
-//                 }
-//             } else {
-//                 Err(ParseError::InvalidToken)
-//             }
-//         } else {
-//             Err(ParseError::InvalidToken)
-//         }
-//     }
-// }
 
 #[derive(Debug)]
 struct ArgsDec {
@@ -153,14 +129,20 @@ impl Parse for ArgsDec {
                             tokens.next();
                             primitive = PrimitiveType::Int;
                         }
+                        Token::Char => {
+                            tokens.next();
+                            primitive = PrimitiveType::Char;
+                        }
                         _ => {
                             return Err(ParseError::InvalidToken);
                         }
                     }
 
+                    let typ = consume_scalar_type(primitive, tokens);
+
                     if let Some(Token::String(arg)) = tokens.next() {
                         args.push(VarDec {
-                            typ: Type::Primitive(primitive),
+                            typ,
                             name: arg.clone(),
                         });
                     }

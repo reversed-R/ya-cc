@@ -5,10 +5,7 @@ pub mod statements;
 use std::collections::HashMap;
 
 use crate::{
-    parser::{
-        symbols,
-        symbols::{globals::FnDec, statements::var_dec::VarDec},
-    },
+    parser::symbols::{self, globals::FnDef, statements::var_dec::VarDec},
     validator::globals::Function,
 };
 
@@ -18,7 +15,10 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
 
     for g in &prog.globals {
         match g {
-            symbols::globals::Globals::FnDec(f) => {
+            symbols::globals::Globals::FnDeclare(_) => {
+                // nothing to do
+            }
+            symbols::globals::Globals::FnDef(f) => {
                 globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
             }
             symbols::globals::Globals::VarDec(v) => {
@@ -248,7 +248,7 @@ impl<'parsed> Env<'parsed> {
 
         for g in globals {
             match g {
-                symbols::globals::Globals::FnDec(f) => {
+                symbols::globals::Globals::FnDef(f) => {
                     if !fns_map.contains_key(&f.name) {
                         fns_map.insert(f.name.clone(), FnSignature::from(f));
                     }
@@ -258,6 +258,17 @@ impl<'parsed> Env<'parsed> {
                         if !scope.contains_key(&v.name) {
                             vars.insert(v.name.clone(), v.typ.clone())?;
                         }
+                    }
+                }
+                symbols::globals::Globals::FnDeclare(f) => {
+                    if !fns_map.contains_key(&f.name) {
+                        fns_map.insert(
+                            f.name.clone(),
+                            FnSignature {
+                                args: &f.args,
+                                rtype: &f.rtype,
+                            },
+                        );
                     }
                 }
             }
@@ -407,8 +418,8 @@ pub struct FnSignature<'fndec> {
     pub rtype: &'fndec Type,
 }
 
-impl<'fndec> From<&'fndec FnDec> for FnSignature<'fndec> {
-    fn from(value: &'fndec FnDec) -> Self {
+impl<'fndec> From<&'fndec FnDef> for FnSignature<'fndec> {
+    fn from(value: &'fndec FnDef) -> Self {
         Self {
             args: &value.args,
             rtype: &value.rtype,

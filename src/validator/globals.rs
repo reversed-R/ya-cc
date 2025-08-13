@@ -1,5 +1,5 @@
 use crate::{
-    parser::symbols::globals::FnDec,
+    parser::symbols::globals::FnDef,
     validator::{statements::Stmt, Env, StmtTypeValidate, TypeError},
 };
 
@@ -13,7 +13,7 @@ pub struct Function {
 // args: Vec<Type>,
 // rtype: Type,
 
-impl StmtTypeValidate for FnDec {
+impl StmtTypeValidate for FnDef {
     type ValidatedType = Function;
 
     fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
