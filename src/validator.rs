@@ -5,19 +5,35 @@ pub mod statements;
 use std::collections::HashMap;
 
 use crate::{
-    parser::symbols::{globals::FnDec, statements::var_dec::VarDec},
+    parser::{
+        symbols,
+        symbols::{globals::FnDec, statements::var_dec::VarDec},
+    },
     validator::globals::Function,
 };
 
 pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
-    let mut env = Env::new(&prog.fns);
-    let mut fns = HashMap::new();
+    let mut env = Env::new(&prog.globals);
+    let mut globals = HashMap::new();
 
-    for f in &prog.fns {
-        fns.insert(f.name.clone(), f.validate(&mut env)?);
+    for g in &prog.globals {
+        match g {
+            symbols::globals::Globals::FnDec(f) => {
+                globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
+            }
+            symbols::globals::Globals::VarDec(v) => {
+                globals.insert(
+                    v.name.clone(),
+                    Globals::Variable(Variable {
+                        typ: v.typ.clone(),
+                        addr: VarAddr::Global(v.name.clone()),
+                    }),
+                );
+            }
+        }
     }
 
-    Ok(Program { fns })
+    Ok(Program { globals })
 }
 
 #[derive(Debug)]
@@ -149,7 +165,13 @@ impl Type {
 
 #[derive(Debug)]
 pub struct Program {
-    pub fns: HashMap<String, Function>,
+    pub globals: HashMap<String, Globals>,
+}
+
+#[derive(Debug)]
+pub enum Globals {
+    Function(Function),
+    Variable(Variable),
 }
 
 pub trait StmtTypeValidate {
@@ -169,24 +191,36 @@ pub struct Env<'parsed> {
     fns: HashMap<String, FnSignature<'parsed>>,
     vars: NestedScope,
     rtype: Option<Type>,
-    max_offset: usize,
+    local_max_offset: usize,
 }
 
 impl<'parsed> Env<'parsed> {
-    pub fn new(fns: &'parsed [FnDec]) -> Self {
+    pub fn new(globals: &'parsed [symbols::globals::Globals]) -> Self {
         let mut fns_map = HashMap::<String, FnSignature>::new();
+        let mut vars = NestedScope::new();
 
-        for f in fns {
-            if !fns_map.contains_key(&f.name) {
-                fns_map.insert(f.name.clone(), FnSignature::from(f));
+        for g in globals {
+            match g {
+                symbols::globals::Globals::FnDec(f) => {
+                    if !fns_map.contains_key(&f.name) {
+                        fns_map.insert(f.name.clone(), FnSignature::from(f));
+                    }
+                }
+                symbols::globals::Globals::VarDec(v) => {
+                    if let Some(scope) = vars.scopes.last() {
+                        if !scope.contains_key(&v.name) {
+                            vars.insert(v.name.clone(), v.typ.clone());
+                        }
+                    }
+                }
             }
         }
 
         Self {
             fns: fns_map,
-            vars: NestedScope::new(),
+            vars,
             rtype: None,
-            max_offset: 0,
+            local_max_offset: 0,
         }
     }
 
@@ -229,9 +263,9 @@ impl<'parsed> Env<'parsed> {
     pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
         self.vars.insert(var, typ)?;
 
-        let cur = self.vars.get_max_offset();
-        if self.max_offset < cur {
-            self.max_offset = cur;
+        let cur = self.vars.get_current_local_max_offset();
+        if self.local_max_offset < cur {
+            self.local_max_offset = cur;
         }
 
         Ok(())
@@ -240,7 +274,8 @@ impl<'parsed> Env<'parsed> {
 
 #[derive(Debug, Clone)]
 pub enum VarAddr {
-    Local(usize), // basepointer + offset
+    Local(usize),   // basepointer + offset
+    Global(String), //
 }
 
 #[derive(Debug, Clone)]
@@ -256,7 +291,9 @@ pub struct NestedScope {
 
 impl NestedScope {
     fn new() -> Self {
-        Self { scopes: vec![] }
+        Self {
+            scopes: vec![HashMap::new()], // global scope
+        }
     }
 
     fn push_scope(&mut self) {
@@ -268,7 +305,7 @@ impl NestedScope {
     }
 
     fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset = self.get_max_offset() + typ.aligned_size();
+        let offset = self.get_current_local_max_offset() + typ.aligned_size();
 
         if let Some(last) = self.scopes.last_mut() {
             if !last.contains_key(&var) {
@@ -299,7 +336,7 @@ impl NestedScope {
         None
     }
 
-    fn get_max_offset(&self) -> usize {
+    fn get_current_local_max_offset(&self) -> usize {
         self.scopes
             .iter()
             .map(|scope| {
@@ -307,6 +344,7 @@ impl NestedScope {
                     .values()
                     .map(|v| match v.addr {
                         VarAddr::Local(offset) => offset,
+                        VarAddr::Global(_) => 0,
                     })
                     .sum::<usize>()
             })

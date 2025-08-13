@@ -16,17 +16,17 @@ fn main() {
             f.read_to_string(&mut contents)
                 .expect(&format!("Internal Error, Reading File: `{}`", file_path));
 
-            // println!("File Content:\n```\n{}\n```", contents);
+            // eprintln!("File Content:\n```\n{}\n```", contents);
 
             let tokens = lexer::tokenize(&contents);
-            // println!("{:?}", tokens);
+            // eprintln!("{:?}", tokens);
 
             let prog = parser::parse(tokens).expect("Parse Error");
-            // println!("{:#?}", prog);
+            // eprintln!("{:#?}", prog);
 
             match validator::validate(&prog) {
                 Ok(validated_prog) => {
-                    // println!("{:#?}", validated_prog);
+                    // eprintln!("{:#?}", validated_prog);
                     generator::x86_64::generate(&validated_prog);
                 }
                 Err(e) => {
@@ -35,6 +35,6 @@ fn main() {
             }
         }
     } else {
-        println!("1 Argument Required: <file-path>")
+        eprintln!("1 Argument Required: <file-path>")
     }
 }

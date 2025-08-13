@@ -1,20 +1,21 @@
 use crate::{
     lexer::token::Token,
-    parser::{symbols::statements::var_dec::VarDec, Parse, ParseError},
+    parser::{
+        symbols::statements::var_dec::{consume_scalar_type, VarDec},
+        Parse, ParseError,
+    },
     validator::{PrimitiveType, Type},
 };
 
 use super::{statements::block::BlockStmt, Stmt};
 
 #[derive(Debug)]
-pub struct FnDec {
-    pub name: String,
-    pub args: Vec<VarDec>,
-    pub stmts: Vec<Stmt>,
-    pub rtype: Type,
+pub enum Globals {
+    FnDec(FnDec),
+    VarDec(VarDec),
 }
 
-impl Parse for FnDec {
+impl Parse for Globals {
     type SelfType = Self;
 
     fn consume(
@@ -32,16 +33,18 @@ impl Parse for FnDec {
                 }
             }
 
+            let typ = consume_scalar_type(primitive, tokens);
+
             if let Some(Token::String(name)) = tokens.next() {
                 if let Some(Token::LPare) = tokens.peek() {
                     if let Ok(args) = ArgsDec::consume(tokens) {
                         if let Ok(block) = BlockStmt::consume(tokens) {
-                            Ok(Self {
+                            Ok(Self::FnDec(FnDec {
                                 name: name.clone(),
                                 args: args.args,
                                 stmts: block.stmts,
-                                rtype: Type::Primitive(primitive),
-                            })
+                                rtype: typ,
+                            }))
                         } else {
                             Err(ParseError::InvalidToken)
                         }
@@ -49,7 +52,16 @@ impl Parse for FnDec {
                         Err(ParseError::InvalidToken)
                     }
                 } else {
-                    Err(ParseError::InvalidToken)
+                    if let Some(Token::SemiColon) = tokens.peek() {
+                        tokens.next();
+
+                        Ok(Self::VarDec(VarDec {
+                            name: name.clone(),
+                            typ,
+                        }))
+                    } else {
+                        Err(ParseError::InvalidToken)
+                    }
                 }
             } else {
                 Err(ParseError::InvalidToken)
@@ -59,6 +71,60 @@ impl Parse for FnDec {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct FnDec {
+    pub name: String,
+    pub args: Vec<VarDec>,
+    pub stmts: Vec<Stmt>,
+    pub rtype: Type,
+}
+
+// impl Parse for FnDec {
+//     type SelfType = Self;
+//
+//     fn consume(
+//         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
+//     ) -> Result<Self::SelfType, ParseError> {
+//         let primitive: PrimitiveType;
+//
+//         if let Some(t) = tokens.next() {
+//             match t {
+//                 Token::Int => {
+//                     primitive = PrimitiveType::Int;
+//                 }
+//                 _ => {
+//                     return Err(ParseError::InvalidToken);
+//                 }
+//             }
+//
+//             if let Some(Token::String(name)) = tokens.next() {
+//                 if let Some(Token::LPare) = tokens.peek() {
+//                     if let Ok(args) = ArgsDec::consume(tokens) {
+//                         if let Ok(block) = BlockStmt::consume(tokens) {
+//                             Ok(Self {
+//                                 name: name.clone(),
+//                                 args: args.args,
+//                                 stmts: block.stmts,
+//                                 rtype: Type::Primitive(primitive),
+//                             })
+//                         } else {
+//                             Err(ParseError::InvalidToken)
+//                         }
+//                     } else {
+//                         Err(ParseError::InvalidToken)
+//                     }
+//                 } else {
+//                     Err(ParseError::InvalidToken)
+//                 }
+//             } else {
+//                 Err(ParseError::InvalidToken)
+//             }
+//         } else {
+//             Err(ParseError::InvalidToken)
+//         }
+//     }
+// }
 
 #[derive(Debug)]
 struct ArgsDec {

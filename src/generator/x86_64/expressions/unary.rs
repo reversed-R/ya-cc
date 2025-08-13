@@ -35,10 +35,14 @@ fn generate_ref_unary(
     match refop {
         RefUnaryOperator::Ref => {
             if let PostfixExpr::Primary(Primary::Variable(var)) = postfix {
-                match var.addr {
+                match &var.addr {
                     VarAddr::Local(offset) => {
                         println!("mov rax, rbp");
                         println!("sub rax, {offset}");
+                        println!("push rax");
+                    }
+                    VarAddr::Global(label) => {
+                        println!("lea rax, {label}[rip]");
                         println!("push rax");
                     }
                 }
@@ -71,10 +75,14 @@ impl Unary {
                 RefUnaryOperator::Deref(count) => {
                     match &self.right {
                         PostfixExpr::Primary(prim) => match prim {
-                            Primary::Variable(var) => match var.addr {
+                            Primary::Variable(var) => match &var.addr {
                                 VarAddr::Local(offset) => {
                                     println!("mov rax, rbp");
                                     println!("sub rax, {offset}");
+                                    println!("push rax");
+                                }
+                                VarAddr::Global(label) => {
+                                    println!("lea rax, {label}[rip]");
                                     println!("push rax");
                                 }
                             },

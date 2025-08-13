@@ -67,7 +67,7 @@ impl Parse for VarDec {
     }
 }
 
-fn consume_scalar_type(
+pub fn consume_scalar_type(
     primitive: PrimitiveType,
     tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
 ) -> Type {

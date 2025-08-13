@@ -4,14 +4,13 @@ pub mod statements;
 
 use crate::{
     lexer::token::Token,
-    parser::{Parse, ParseError},
+    parser::{symbols::globals::Globals, Parse, ParseError},
 };
-use globals::FnDec;
 use statements::Stmt;
 
 #[derive(Debug)]
 pub struct Program {
-    pub fns: Vec<FnDec>,
+    pub globals: Vec<Globals>, // pub fns: Vec<FnDec>,
 }
 
 impl Parse for Program {
@@ -20,10 +19,10 @@ impl Parse for Program {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        let mut prog = Self { fns: vec![] };
+        let mut prog = Self { globals: vec![] };
 
-        while let Ok(fn_dec) = FnDec::consume(tokens) {
-            prog.fns.push(fn_dec);
+        while let Ok(global) = Globals::consume(tokens) {
+            prog.globals.push(global);
         }
 
         Ok(prog)

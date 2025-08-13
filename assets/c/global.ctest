@@ -1,0 +1,9 @@
+int x;
+int *y;
+
+int main(){
+  y = &x;
+  *y = 2;
+  
+  return x;
+}

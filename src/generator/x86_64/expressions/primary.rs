@@ -18,7 +18,7 @@ impl LocalGenerate for Primary {
                     panic!("TODO");
                 }
             },
-            Self::Variable(var) => match var.addr {
+            Self::Variable(var) => match &var.addr {
                 VarAddr::Local(offset) => {
                     if let Type::Array(_, _) = &var.typ {
                         println!("mov rax, rbp");
@@ -27,6 +27,9 @@ impl LocalGenerate for Primary {
                     } else {
                         println!("push [rbp - {offset}]");
                     }
+                }
+                VarAddr::Global(label) => {
+                    println!("push QWORD PTR {label}[rip]");
                 }
             },
             Self::FnCall(f) => {

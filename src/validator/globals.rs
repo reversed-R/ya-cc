@@ -29,7 +29,7 @@ impl StmtTypeValidate for FnDec {
 
         Ok(Function {
             stmts,
-            local_max_offset: env.max_offset,
+            local_max_offset: env.local_max_offset,
             arg_count: self.args.len(),
         })
     }
