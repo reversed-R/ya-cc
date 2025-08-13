@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
-    let mut env = Env::new(&prog.globals);
+    let mut env = Env::new(&prog.globals)?;
     let mut globals = HashMap::new();
 
     for g in &prog.globals {
@@ -195,7 +195,7 @@ pub struct Env<'parsed> {
 }
 
 impl<'parsed> Env<'parsed> {
-    pub fn new(globals: &'parsed [symbols::globals::Globals]) -> Self {
+    pub fn new(globals: &'parsed [symbols::globals::Globals]) -> Result<Self, TypeError> {
         let mut fns_map = HashMap::<String, FnSignature>::new();
         let mut vars = NestedScope::new();
 
@@ -209,19 +209,19 @@ impl<'parsed> Env<'parsed> {
                 symbols::globals::Globals::VarDec(v) => {
                     if let Some(scope) = vars.scopes.last() {
                         if !scope.contains_key(&v.name) {
-                            vars.insert(v.name.clone(), v.typ.clone());
+                            vars.insert(v.name.clone(), v.typ.clone())?;
                         }
                     }
                 }
             }
         }
 
-        Self {
+        Ok(Self {
             fns: fns_map,
             vars,
             rtype: None,
             local_max_offset: 0,
-        }
+        })
     }
 
     pub fn begin_local(&mut self, args: &[VarDec], rtype: &Type) {
