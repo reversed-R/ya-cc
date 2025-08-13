@@ -17,6 +17,7 @@ pub enum Primary {
 pub enum Literal {
     Int(i64),
     Float(f64),
+    Char(u8),
 }
 
 #[derive(Debug)]
@@ -39,6 +40,11 @@ impl ExprTypeValidate for primary::Primary {
                     // Type::Primitive(PrimitiveType::Float),
                     Type::Primitive(PrimitiveType::Int),
                     Primary::Literal(Literal::Float(*f)),
+                )),
+                primary::Literal::Char(c) => Ok((
+                    // Type::Primitive(PrimitiveType::Float),
+                    Type::Primitive(PrimitiveType::Char),
+                    Primary::Literal(Literal::Char(*c)),
                 )),
             },
             Self::Identifier(id) => {

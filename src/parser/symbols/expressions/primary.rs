@@ -17,6 +17,7 @@ pub enum Primary {
 #[derive(Debug, Clone)]
 pub enum Literal {
     Int(i64),
+    Char(u8),
     Float(f64),
 }
 
@@ -35,6 +36,7 @@ impl Parse for Primary {
         if let Some(t) = tokens.next() {
             match t {
                 Token::IntLiteral(i) => Ok(Self::Literal(Literal::Int(*i))),
+                Token::CharLiteral(c) => Ok(Self::Literal(Literal::Char(*c))),
                 Token::String(s) => {
                     if let Some(Token::LPare) = tokens.peek() {
                         tokens.next();

@@ -2,8 +2,76 @@ pub mod token;
 
 use token::Token;
 
-pub fn tokenize(str: &str) -> Vec<Token> {
-    let mut tokens: Vec<Token> = vec![];
+#[derive(Debug)]
+pub enum TokenizeError {
+    SingleQuoteCloseNotFound,
+    DoubleQuoteCloseNotFound,
+}
+
+pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
+    let mut pretokens: Vec<PreToken> = vec![];
+
+    #[derive(Debug)]
+    enum PreToken<'src> {
+        Raw(&'src str),
+        CharLiteral(u8),
+        StringLiteral(&'src str),
+    }
+
+    let mut i = 0;
+    let mut raw_head = 0;
+    while i < str.len() {
+        if &str[i..i + 1] == "\'" {
+            if i - raw_head > 0 {
+                pretokens.push(PreToken::Raw(&str[raw_head..i]));
+            }
+            i = i + 1;
+
+            let mut iquote = i;
+            while iquote < str.len() {
+                // TODO:
+                // if backslach appear, start escape
+                if &str[iquote..iquote + 1] == "\'" {
+                    raw_head = iquote + 1;
+                    if iquote == i + 1 {
+                        // ISSUE: more good code ...
+                        let c: u8 = str[i..i + 1].as_bytes().first().unwrap().clone();
+                        pretokens.push(PreToken::CharLiteral(c));
+                        i = iquote + 1;
+                        break;
+                    } else {
+                        panic!("TODO: Too Many Characters in Single Quote `'`");
+                    }
+                }
+
+                iquote += 1;
+            }
+        } else if &str[1..i + 1] == "\"" {
+            if i - raw_head > 0 {
+                pretokens.push(PreToken::Raw(&str[raw_head..i]));
+            }
+            i = i + 1;
+
+            let mut iquote = i;
+            while iquote < str.len() {
+                // TODO:
+                // if backslach appear, start escape
+                if &str[iquote..iquote + 1] == "\"" {
+                    raw_head = iquote + 1;
+                    pretokens.push(PreToken::StringLiteral(&str[i..iquote]));
+                    i = iquote + 1;
+                    break;
+                }
+
+                iquote += 1;
+            }
+        } else {
+            i += 1;
+        }
+    }
+    if i - raw_head > 0 {
+        pretokens.push(PreToken::Raw(&str[raw_head..i]));
+    }
 
     // delimiter operators
     // ISSUE: must sort longer by operator chars length
@@ -30,15 +98,33 @@ pub fn tokenize(str: &str) -> Vec<Token> {
         Token::Colon,     // :
         Token::SemiColon, // ;
     ];
-    let words: Vec<&str> = str.split(&[' ', '\t', '\n'][..]).collect();
 
-    for w in words {
-        tokens.append(&mut to_tokens(w, &delims));
+    let mut token_vecs: Vec<Vec<Token>> = vec![];
+    for pretoken in &pretokens {
+        match pretoken {
+            PreToken::CharLiteral(c) => {
+                token_vecs.push(vec![Token::CharLiteral(*c)]);
+            }
+            PreToken::StringLiteral(s) => {
+                token_vecs.push(vec![Token::StringLiteral(s.to_string())]);
+            }
+            PreToken::Raw(r) => {
+                let words: Vec<&str> = r.split(&[' ', '\t', '\n'][..]).collect();
+                let mut tmp_tokens = vec![];
+
+                for w in words {
+                    tmp_tokens.append(&mut to_tokens(w, &delims));
+                }
+
+                token_vecs.push(tmp_tokens);
+            }
+        }
     }
 
     // check tokens judged as string but can be judged as a reserved word
-    tokens = tokens
+    let tokens: Vec<Token> = token_vecs
         .into_iter()
+        .flatten()
         .map(|t| {
             match t {
                 Token::String(s) => {
@@ -72,7 +158,7 @@ pub fn tokenize(str: &str) -> Vec<Token> {
         })
         .collect();
 
-    tokens
+    Ok(tokens)
 }
 
 fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {

@@ -1,35 +1,37 @@
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
-    String(String),  // string of remain characters
-    IntLiteral(i64), // int literal
-    If,              // if
-    Else,            // else
-    While,           // while
-    Return,          // return
-    SizeOf,          // sizeof
-    Int,             // int (reserved word of type)
-    Char,            // char (reserved word of type)
-    LPare,           // (
-    RPare,           // )
-    LBrace,          // {
-    RBrace,          // }
-    LBracket,        // [
-    RBracket,        // ]
-    Plus,            // +
-    Minus,           // -
-    Asterisk,        // *
-    Slash,           // /
-    Ampersand,       // &
-    Lesser,          // <
-    Greater,         // >
-    LesEq,           // <=
-    GrtEq,           // >=
-    Equal,           // ==
-    NotEq,           // !=
-    Assign,          // =
-    Comma,           // ,
-    Colon,           // :
-    SemiColon,       // ;
+    String(String),        // string of remain characters
+    IntLiteral(i64),       // int literal
+    CharLiteral(u8),       // char literal
+    StringLiteral(String), // string literal
+    If,                    // if
+    Else,                  // else
+    While,                 // while
+    Return,                // return
+    SizeOf,                // sizeof
+    Int,                   // int (reserved word of type)
+    Char,                  // char (reserved word of type)
+    LPare,                 // (
+    RPare,                 // )
+    LBrace,                // {
+    RBrace,                // }
+    LBracket,              // [
+    RBracket,              // ]
+    Plus,                  // +
+    Minus,                 // -
+    Asterisk,              // *
+    Slash,                 // /
+    Ampersand,             // &
+    Lesser,                // <
+    Greater,               // >
+    LesEq,                 // <=
+    GrtEq,                 // >=
+    Equal,                 // ==
+    NotEq,                 // !=
+    Assign,                // =
+    Comma,                 // ,
+    Colon,                 // :
+    SemiColon,             // ;
 }
 
 impl Token {
@@ -37,6 +39,8 @@ impl Token {
         match self {
             Self::String(_) => "".to_string(),
             Self::IntLiteral(_) => "".to_string(),
+            Self::CharLiteral(_) => "".to_string(),
+            Self::StringLiteral(_) => "".to_string(),
             Self::If => "if".to_string(),
             Self::Else => "else".to_string(),
             Self::While => "while".to_string(),

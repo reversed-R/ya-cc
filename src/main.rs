@@ -10,7 +10,8 @@ fn main() {
 
     if args.len() == 2 {
         if let Some(file_path) = args.get(1) {
-            let mut f = File::open(file_path).unwrap_or_else(|_| panic!("File Not Found: `{file_path}`"));
+            let mut f =
+                File::open(file_path).unwrap_or_else(|_| panic!("File Not Found: `{file_path}`"));
 
             let mut contents = String::new();
             f.read_to_string(&mut contents)
@@ -18,11 +19,11 @@ fn main() {
 
             // eprintln!("File Content:\n```\n{}\n```", contents);
 
-            let tokens = lexer::tokenize(&contents);
+            let tokens = lexer::tokenize(&contents).expect("Tokenize Error");
             // eprintln!("{:?}", tokens);
 
             let prog = parser::parse(tokens).expect("Parse Error");
-            // eprintln!("{:#?}", prog);
+            eprintln!("{:#?}", prog);
 
             match validator::validate(&prog) {
                 Ok(validated_prog) => {
