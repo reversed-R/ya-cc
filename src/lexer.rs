@@ -82,8 +82,8 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
     while i < str.len() {
         for d in delims {
             if (|p: &str| {
-                if i + p.len() - 1 < str.len() {
-                    if p == &str[i..i + p.len()] {
+                if i + p.len() - 1 < str.len()
+                    && p == &str[i..i + p.len()] {
                         if i - last_index > 0 {
                             tokens.push(Token::String(str[last_index..i].to_string()));
                         }
@@ -94,7 +94,6 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
 
                         return true;
                     }
-                }
 
                 false
             })(&d.pattern())
@@ -122,7 +121,7 @@ fn try_get_dec_int(str: &str) -> Option<Token> {
 }
 
 fn try_get_prefixed_int(str: &str) -> Option<Token> {
-    if str.len() > 2 && str.chars().nth(0).unwrap() == '0' {
+    if str.len() > 2 && str.starts_with('0') {
         let radix = match str.chars().nth(1).unwrap().to_ascii_lowercase() {
             'b' => 2,
             'o' => 8,

@@ -23,12 +23,10 @@ impl Parse for BlockStmt {
                 if let Token::RBrace = t {
                     tokens.next();
                     return Ok(Self { stmts });
+                } else if let Ok(stmt) = Stmt::consume(tokens) {
+                    stmts.push(stmt);
                 } else {
-                    if let Ok(stmt) = Stmt::consume(tokens) {
-                        stmts.push(stmt);
-                    } else {
-                        return Err(ParseError::InvalidToken);
-                    }
+                    return Err(ParseError::InvalidToken);
                 }
             }
 

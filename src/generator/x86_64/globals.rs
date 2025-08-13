@@ -29,7 +29,7 @@ impl Function {
     pub fn generate(&self, name: &str) {
         let mut env = Env::new(name.to_string());
 
-        println!("{}:", name);
+        println!("{name}:");
         println!("push rbp");
         println!("mov rbp, rsp");
         println!("sub rsp, {}", self.local_max_offset);

@@ -51,17 +51,15 @@ impl Parse for Globals {
                     } else {
                         Err(ParseError::InvalidToken)
                     }
-                } else {
-                    if let Some(Token::SemiColon) = tokens.peek() {
-                        tokens.next();
+                } else if let Some(Token::SemiColon) = tokens.peek() {
+                    tokens.next();
 
-                        Ok(Self::VarDec(VarDec {
-                            name: name.clone(),
-                            typ,
-                        }))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
+                    Ok(Self::VarDec(VarDec {
+                        name: name.clone(),
+                        typ,
+                    }))
+                } else {
+                    Err(ParseError::InvalidToken)
                 }
             } else {
                 Err(ParseError::InvalidToken)

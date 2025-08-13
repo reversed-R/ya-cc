@@ -13,7 +13,7 @@ pub fn generate(prog: &Program) {
     for (gname, g) in &prog.globals {
         match g {
             Globals::Function(f) => {
-                f.generate(&gname);
+                f.generate(gname);
             }
             _ => {
                 // nothing to do

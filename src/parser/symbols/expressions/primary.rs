@@ -48,27 +48,25 @@ impl Parse for Primary {
                                     name: s.clone(),
                                     args,
                                 }));
-                            } else {
-                                if let Ok(expr) = Expr::consume(tokens) {
-                                    args.push(expr);
-                                    if let Some(t) = tokens.peek() {
-                                        match t {
-                                            Token::Comma => {
-                                                tokens.next();
-                                            }
-                                            Token::RPare => {
-                                                continue;
-                                            }
-                                            _ => {
-                                                return Err(ParseError::InvalidToken);
-                                            }
+                            } else if let Ok(expr) = Expr::consume(tokens) {
+                                args.push(expr);
+                                if let Some(t) = tokens.peek() {
+                                    match t {
+                                        Token::Comma => {
+                                            tokens.next();
                                         }
-                                    } else {
-                                        return Err(ParseError::InvalidToken);
+                                        Token::RPare => {
+                                            continue;
+                                        }
+                                        _ => {
+                                            return Err(ParseError::InvalidToken);
+                                        }
                                     }
                                 } else {
                                     return Err(ParseError::InvalidToken);
                                 }
+                            } else {
+                                return Err(ParseError::InvalidToken);
                             }
                         }
 

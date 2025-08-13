@@ -10,11 +10,11 @@ fn main() {
 
     if args.len() == 2 {
         if let Some(file_path) = args.get(1) {
-            let mut f = File::open(file_path).expect(&format!("File Not Found: `{}`", file_path));
+            let mut f = File::open(file_path).unwrap_or_else(|_| panic!("File Not Found: `{file_path}`"));
 
             let mut contents = String::new();
             f.read_to_string(&mut contents)
-                .expect(&format!("Internal Error, Reading File: `{}`", file_path));
+                .unwrap_or_else(|_| panic!("Internal Error, Reading File: `{file_path}`"));
 
             // eprintln!("File Content:\n```\n{}\n```", contents);
 
@@ -30,7 +30,7 @@ fn main() {
                     generator::x86_64::generate(&validated_prog);
                 }
                 Err(e) => {
-                    panic!("{:#?}", e);
+                    panic!("{e:#?}");
                 }
             }
         }

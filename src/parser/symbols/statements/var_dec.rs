@@ -45,15 +45,13 @@ impl Parse for VarDec {
                             } else {
                                 Err(ParseError::InvalidToken)
                             }
+                        } else if let Some(Token::SemiColon) = tokens.next() {
+                            Ok(Self {
+                                typ,
+                                name: id.clone(),
+                            })
                         } else {
-                            if let Some(Token::SemiColon) = tokens.next() {
-                                Ok(Self {
-                                    typ,
-                                    name: id.clone(),
-                                })
-                            } else {
-                                Err(ParseError::InvalidToken)
-                            }
+                            Err(ParseError::InvalidToken)
                         }
                     } else {
                         Err(ParseError::InvalidToken)

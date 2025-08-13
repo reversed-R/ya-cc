@@ -121,7 +121,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
 
                 let (typ, u) = u.validate(env)?;
                 
-                println!("# typ: {:?}", typ);
+                println!("# typ: {typ:?}");
 
                 Ok((typ, PostfixExpr::Unary(Box::new(u))))
             }
