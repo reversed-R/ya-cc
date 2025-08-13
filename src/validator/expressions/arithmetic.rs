@@ -41,6 +41,9 @@ impl ArithmOperator {
                     PrimitiveType::Int => Self::Iadd,
                     // PrimitiveType::Float => Self::Fadd,
                     PrimitiveType::Char => Self::Cadd,
+                    PrimitiveType::Void => {
+                        panic!("Cannot add or sub void");
+                    }
                 },
                 Type::PtrTo(_) => Self::Padd,
                 Type::Array(_, _) => Self::Padd, // WARN: is it true?
@@ -50,19 +53,13 @@ impl ArithmOperator {
                     PrimitiveType::Int => Self::Isub,
                     // PrimitiveType::Float => Self::Fsub,
                     PrimitiveType::Char => Self::Csub,
+                    PrimitiveType::Void => {
+                        panic!("Cannot add or sub void");
+                    }
                 },
                 Type::PtrTo(_) => Self::Psub,
                 Type::Array(_, _) => Self::Psub, // WARN: is it true?
             },
-        }
-    }
-}
-
-impl From<&arithmetic::ArithmOperator> for ArithmOperator {
-    fn from(value: &arithmetic::ArithmOperator) -> Self {
-        match value {
-            arithmetic::ArithmOperator::Add => Self::Iadd,
-            arithmetic::ArithmOperator::Sub => Self::Isub,
         }
     }
 }

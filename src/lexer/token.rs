@@ -11,6 +11,7 @@ pub enum Token {
     SizeOf,                // sizeof
     Int,                   // int (reserved word of type)
     Char,                  // char (reserved word of type)
+    Void,                  // void (reserved word of type)
     LPare,                 // (
     RPare,                 // )
     LBrace,                // {
@@ -49,6 +50,7 @@ impl Token {
             Self::SizeOf => "sizeof".to_string(),
             Self::Int => "int".to_string(),
             Self::Char => "char".to_string(),
+            Self::Void => "void".to_string(),
             Self::LPare => "(".to_string(),
             Self::RPare => ")".to_string(),
             Self::LBrace => "{".to_string(),

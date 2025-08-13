@@ -32,6 +32,9 @@ impl Parse for Globals {
                 Token::Char => {
                     primitive = PrimitiveType::Char;
                 }
+                Token::Void => {
+                    primitive = PrimitiveType::Void;
+                }
                 _ => {
                     return Err(ParseError::InvalidToken);
                 }
@@ -132,6 +135,10 @@ impl Parse for ArgsDec {
                         Token::Char => {
                             tokens.next();
                             primitive = PrimitiveType::Char;
+                        }
+                        Token::Void => {
+                            tokens.next();
+                            primitive = PrimitiveType::Void;
                         }
                         _ => {
                             return Err(ParseError::InvalidToken);

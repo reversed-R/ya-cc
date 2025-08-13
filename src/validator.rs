@@ -2,7 +2,7 @@ pub mod expressions;
 pub mod globals;
 pub mod statements;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use crate::{
     parser::symbols::{self, globals::FnDef, statements::var_dec::VarDec},
@@ -55,6 +55,7 @@ pub enum PrimitiveType {
     Int,
     // Float,
     Char,
+    Void,
 }
 
 impl PrimitiveType {
@@ -63,6 +64,7 @@ impl PrimitiveType {
             Self::Int => 8,
             // Self::Float => 8,
             Self::Char => 1,
+            Self::Void => 0,
         }
     }
 
@@ -71,6 +73,7 @@ impl PrimitiveType {
             Self::Int => 8,
             // Self::Float => 8,
             Self::Char => 1,
+            Self::Void => 0,
         }
     }
 
@@ -132,6 +135,7 @@ impl Type {
                         PrimitiveType::Int => TypeComarison::Equal,
                         // PrimitiveType::Float => TypeComarison::ImplicitlyConvertableTo,
                         PrimitiveType::Char => TypeComarison::ImplicitlyConvertableFrom,
+                        PrimitiveType::Void => TypeComarison::ImplicitlyUnconvertable,
                     },
                     // PrimitiveType::Float => match other_prim {
                     //     PrimitiveType::Int => TypeComarison::ImplicitlyConvertableFrom,
@@ -142,6 +146,11 @@ impl Type {
                         PrimitiveType::Int => TypeComarison::ImplicitlyConvertableTo,
                         // PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable, // ??
                         PrimitiveType::Char => TypeComarison::Equal,
+                        PrimitiveType::Void => TypeComarison::ImplicitlyUnconvertable,
+                    },
+                    PrimitiveType::Void => match other_prim {
+                        PrimitiveType::Void => TypeComarison::Equal,
+                        _ => TypeComarison::ImplicitlyUnconvertable,
                     },
                 },
                 Self::PtrTo(_) => {
@@ -161,12 +170,19 @@ impl Type {
                     },
                     // PrimitiveType::Float => TypeComarison::ImplicitlyUnconvertable,
                     PrimitiveType::Char => TypeComarison::ImplicitlyUnconvertable,
+                    PrimitiveType::Void => TypeComarison::ImplicitlyUnconvertable,
                 },
                 Self::PtrTo(other_pointed) => {
                     if pointed.equals(other_pointed) {
                         TypeComarison::Equal
                     } else {
-                        TypeComarison::ImplicitlyUnconvertable
+                        if pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
+                            TypeComarison::ImplicitlyConvertableFrom
+                        } else if other_pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
+                            TypeComarison::ImplicitlyConvertableTo
+                        } else {
+                            pointed.compare(other_pointed) // WARN: is it true?
+                        }
                     }
                 }
                 Self::Array(atyp, _) => {

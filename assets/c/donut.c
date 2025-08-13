@@ -1,5 +1,5 @@
 int putchar(char c);
-int *memset(int *buf, int c, int n);
+int *memset(void *buf, int c, int n);
 int usleep(int usec);
 int printf(char *fmt, int c);
 
@@ -97,7 +97,7 @@ int main() {
       if (k % 80) {
         putchar(b[k]);
       } else {
-        putchar(10);
+        printf("%c", 10);
       }
       k = k + 1;
     }

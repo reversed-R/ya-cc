@@ -1,7 +1,8 @@
 use crate::{
     parser::symbols::expressions::primary,
     validator::{
-        expressions::Expr, Env, ExprTypeValidate, PrimitiveType, Type, TypeError, Variable,
+        expressions::Expr, Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
+        Variable,
     },
 };
 
@@ -90,12 +91,22 @@ impl ExprTypeValidate for primary::Primary {
 
                     let fcallee = env.fns.get(&fcalling.name).unwrap();
                     if let Some(acallee) = fcallee.args.get(i) {
-                        if !acalling_typ.equals(&acallee.typ) {
-                            return Err(TypeError::ArgumentMismatch(
-                                Some(acallee.typ.clone()),
-                                Some(acalling_typ),
-                            ));
+                        match acallee.typ.compare(&acalling_typ) {
+                            TypeComarison::Equal => {}
+                            TypeComarison::ImplicitlyConvertableFrom => {}
+                            _ => {
+                                return Err(TypeError::ArgumentMismatch(
+                                    Some(acallee.typ.clone()),
+                                    Some(acalling_typ),
+                                ));
+                            }
                         }
+                        // if !acalling_typ.equals(&acallee.typ) {
+                        //     return Err(TypeError::ArgumentMismatch(
+                        //         Some(acallee.typ.clone()),
+                        //         Some(acalling_typ),
+                        //     ));
+                        // }
                     } else {
                         return Err(TypeError::ArgumentMismatch(None, Some(acalling_typ)));
                     }
@@ -116,9 +127,6 @@ impl ExprTypeValidate for primary::Primary {
                         }),
                     ))
                 }
-                // } else {
-                //     Err(TypeError::FunctionNotFound(fcalling.name.clone()))
-                // }
             }
         }
     }

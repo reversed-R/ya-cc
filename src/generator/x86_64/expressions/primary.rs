@@ -55,16 +55,16 @@ impl LocalGenerate for Primary {
                 println!("mov rax, rsp");
                 println!("and rax, 0xf");
                 println!("cmp rax, 0");
-                println!("je .L.FNCALL{id}.ALIGNED");
+                println!("je .L{}$fncall{id}$aligned", env.fname);
                 println!("sub rsp, 8");
                 println!("mov al, 0");
                 println!("call {}", f.name);
                 println!("add rsp, 8");
-                println!("jmp .L.FNCALL{id}.END");
-                println!(".L.FNCALL{id}.ALIGNED:");
+                println!("jmp .L{}$fncall{id}$end", env.fname);
+                println!(".L{}$fncall{id}$aligned:", env.fname);
                 println!("mov al, 0");
                 println!("call {}", f.name);
-                println!(".L.FNCALL{id}.END:");
+                println!(".L{}$fncall{id}$end:", env.fname);
                 println!("push rax");
             }
             Self::Expr(expr) => {

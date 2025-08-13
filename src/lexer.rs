@@ -143,6 +143,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                             Token::SizeOf,
                             Token::Int,
                             Token::Char,
+                            Token::Void,
                         ];
 
                         for r in replacers {
