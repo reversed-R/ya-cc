@@ -20,7 +20,7 @@ fn main() {
             // eprintln!("File Content:\n```\n{}\n```", contents);
 
             let tokens = lexer::tokenize(&contents).expect("Tokenize Error");
-            // eprintln!("{:?}", tokens);
+            eprintln!("{:?}", tokens);
 
             let prog = parser::parse(tokens).expect("Parse Error");
             // eprintln!("{:#?}", prog);

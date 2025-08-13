@@ -25,7 +25,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
             if i - raw_head > 0 {
                 pretokens.push(PreToken::Raw(&str[raw_head..i]));
             }
-            i = i + 1;
+            i += 1;
 
             let mut iquote = i;
             while iquote < str.len() {
@@ -46,11 +46,11 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
 
                 iquote += 1;
             }
-        } else if &str[1..i + 1] == "\"" {
+        } else if &str[i..i + 1] == "\"" {
             if i - raw_head > 0 {
                 pretokens.push(PreToken::Raw(&str[raw_head..i]));
             }
-            i = i + 1;
+            i += 1;
 
             let mut iquote = i;
             while iquote < str.len() {
