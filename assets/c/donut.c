@@ -19,7 +19,7 @@ int a(int *c, int *s, int d, int t) {
 int main() {
   int z[1760];
   char b[1760];
-  printf("%c[2J", 33);
+  printf("%c[2J", 27);
   int s;
   int q;
   int r;

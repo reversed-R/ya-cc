@@ -20,6 +20,7 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
             }
             symbols::globals::Globals::FnDef(f) => {
                 globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
+                env.vars = NestedScope::new();
             }
             symbols::globals::Globals::VarDec(v) => {
                 globals.insert(
@@ -323,6 +324,7 @@ impl<'parsed> Env<'parsed> {
 
     pub fn end_local(&mut self) {
         self.vars.pop_scope();
+        self.local_max_offset = 0;
 
         self.rtype = None;
     }
@@ -338,7 +340,7 @@ impl<'parsed> Env<'parsed> {
     pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
         self.vars.insert(var, typ)?;
 
-        let cur = self.vars.get_current_local_max_offset();
+        let cur = self.vars.get_varsize_sum();
         if self.local_max_offset < cur {
             self.local_max_offset = cur;
         }
@@ -380,8 +382,7 @@ impl NestedScope {
     }
 
     fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset =
-            (self.get_current_local_max_offset() + typ.size()).next_multiple_of(typ.align());
+        let offset = (self.get_varsize_sum() + typ.size()).next_multiple_of(typ.align());
 
         if let Some(last) = self.scopes.last_mut() {
             if !last.contains_key(&var) {
@@ -412,18 +413,10 @@ impl NestedScope {
         None
     }
 
-    fn get_current_local_max_offset(&self) -> usize {
+    fn get_varsize_sum(&self) -> usize {
         self.scopes
             .iter()
-            .map(|scope| {
-                scope
-                    .values()
-                    .map(|v| match v.addr {
-                        VarAddr::Local(offset) => offset,
-                        VarAddr::Global(_) => 0,
-                    })
-                    .sum::<usize>()
-            })
+            .map(|scope| scope.values().map(|v| v.typ.size()).sum::<usize>())
             .sum::<usize>()
     }
 }
