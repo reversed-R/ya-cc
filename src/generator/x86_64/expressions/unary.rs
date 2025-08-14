@@ -1,40 +1,22 @@
 use crate::{
     generator::x86_64::globals::LocalGenerate,
     validator::{
-        expressions::{
-            postfix::PostfixExpr,
-            primary::Primary,
-            unary::{RefUnaryOperator, Unary, UnaryOperator},
-        },
+        expressions::{Exprs, Primary, UnOperator, Unary},
         VarAddr,
     },
 };
 
-impl LocalGenerate for Unary {
-    fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
-        match self.op {
-            UnaryOperator::None => {
-                generate_ref_unary(&self.refop, &self.right, env);
-            }
-            UnaryOperator::Neg => {
-                generate_ref_unary(&self.refop, &self.right, env);
+pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env) {
+    match unary.op {
+        UnOperator::Neg => {
+            unary.expr.generate(env);
 
-                println!("pop rax");
-                println!("neg rax");
-                println!("push rax");
-            }
+            println!("pop rax");
+            println!("neg rax");
+            println!("push rax");
         }
-    }
-}
-
-fn generate_ref_unary(
-    refop: &RefUnaryOperator,
-    postfix: &PostfixExpr,
-    env: &mut crate::generator::x86_64::globals::Env,
-) {
-    match refop {
-        RefUnaryOperator::Ref => {
-            if let PostfixExpr::Primary(Primary::Variable(var)) = postfix {
+        UnOperator::Ref => {
+            if let Exprs::Primary(Primary::Variable(var)) = &*unary.expr {
                 match &var.addr {
                     VarAddr::Local(offset) => {
                         println!("mov rax, rbp");
@@ -50,12 +32,12 @@ fn generate_ref_unary(
                 panic!("Expected Identifier");
             }
         }
-        RefUnaryOperator::Deref(count) => {
-            postfix.generate(env);
+        UnOperator::Deref(count) => {
+            unary.expr.generate(env);
 
             println!("pop rax");
 
-            for _ in 0..*count {
+            for _ in 0..count {
                 println!("mov rax, [rax]");
             }
             println!("push rax");
@@ -63,57 +45,56 @@ fn generate_ref_unary(
     }
 }
 
-impl Unary {
-    pub fn generate_as_left(&self, env: &mut crate::generator::x86_64::globals::Env) {
-        // 左辺値として生成
-        println!("# unary as left ----");
-        match self.op {
-            UnaryOperator::None => match self.refop {
-                RefUnaryOperator::Ref => {
-                    panic!("Invalid Left Value");
-                }
-                RefUnaryOperator::Deref(count) => {
-                    match &self.right {
-                        PostfixExpr::Primary(prim) => match prim {
-                            Primary::Variable(var) => match &var.addr {
-                                VarAddr::Local(offset) => {
-                                    println!("mov rax, rbp");
-                                    println!("sub rax, {offset}");
-                                    println!("push rax");
-                                }
-                                VarAddr::Global(label) => {
-                                    println!("lea rax, {label}[rip]");
-                                    println!("push rax");
-                                }
-                            },
-                            Primary::Expr(expr) => {
-                                expr.generate(env);
-                            }
-                            Primary::FnCall(f) => {
-                                // TODO:
-                                panic!("TODO");
-                            }
-                            _ => {
-                                panic!("Invalid Left Value");
-                            }
-                        },
-                        PostfixExpr::Unary(unary) => {
-                            unary.generate_as_left(env);
-                        }
-                    }
-
-                    println!("pop rax");
-
-                    for _ in 0..count {
-                        println!("mov rax, [rax]");
-                    }
-                    println!("push rax");
-                }
-            },
-            UnaryOperator::Neg => {
-                panic!("Invalid Left Value");
-            }
+pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env) {
+    // 左辺値として生成
+    println!("# unary as left ----");
+    match unary.op {
+        UnOperator::Neg => {
+            panic!("Invalid Left Value");
         }
-        println!("# ---- unary as left");
+        UnOperator::Ref => {
+            panic!("Invalid Left Value");
+        }
+        UnOperator::Deref(count) => {
+            match &*unary.expr {
+                Exprs::Primary(prim) => match prim {
+                    Primary::Variable(var) => match &var.addr {
+                        VarAddr::Local(offset) => {
+                            println!("mov rax, rbp");
+                            println!("sub rax, {offset}");
+                            println!("push rax");
+                        }
+                        VarAddr::Global(label) => {
+                            println!("lea rax, {label}[rip]");
+                            println!("push rax");
+                        }
+                    },
+                    Primary::Expr(expr) => {
+                        expr.generate(env);
+                    }
+                    Primary::FnCall(f) => {
+                        // TODO:
+                        panic!("TODO");
+                    }
+                    _ => {
+                        panic!("Invalid Left Value");
+                    }
+                },
+                Exprs::Unary(un) => {
+                    generate_as_left(&un, env);
+                }
+                Exprs::Binary(bin) => {
+                    todo!();
+                    // generate_as_left(&bin, env);
+                }
+            }
+
+            println!("pop rax");
+
+            for _ in 0..count {
+                println!("mov rax, [rax]");
+            }
+            println!("push rax");
+        }
     }
 }

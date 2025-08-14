@@ -1,16 +1,21 @@
-pub mod arithmetic;
-pub mod assignment;
-pub mod equality;
-pub mod multiplication;
-pub mod postfix;
+pub mod binary;
 pub mod primary;
-pub mod relational;
 pub mod unary;
 
-use crate::{generator::x86_64::globals::LocalGenerate, validator::expressions::Expr};
+use crate::{generator::x86_64::globals::LocalGenerate, validator::expressions::Exprs};
 
-impl LocalGenerate for Expr {
+impl LocalGenerate for Exprs {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {
-        self.0.generate(env);
+        match self {
+            Exprs::Primary(prim) => {
+                primary::generate(prim, env);
+            }
+            Exprs::Unary(unary) => {
+                unary::generate(unary, env);
+            }
+            Exprs::Binary(bin) => {
+                binary::generate(bin, env);
+            }
+        }
     }
 }

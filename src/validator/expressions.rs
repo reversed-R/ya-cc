@@ -40,15 +40,15 @@ pub enum Exprs {
 
 #[derive(Debug)]
 pub struct Unary {
-    op: UnOperator,
-    expr: Box<Exprs>,
+    pub op: UnOperator,
+    pub expr: Box<Exprs>,
 }
 
 #[derive(Debug)]
 pub struct Binary {
-    op: BinOperator,
-    left: Box<Exprs>,
-    right: Box<Exprs>,
+    pub op: BinOperator,
+    pub left: Box<Exprs>,
+    pub right: Box<Exprs>,
 }
 
 #[derive(Debug)]
