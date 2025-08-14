@@ -19,15 +19,23 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                 // nothing to do
             }
             symbols::globals::Globals::FnDef(f) => {
-                env = Env {
-                    fns: env.fns,
-                    vars: NestedScope::new(),
-                    rtype: Some(f.rtype.clone()),
-                    string_literals: env.string_literals,
-                    local_max_offset: f.args.iter().map(|arg| arg.typ.size()).sum(),
-                };
+                if let Some(global_scope) = env.vars.scopes.first() {
+                    let mut vars = NestedScope::new();
+                    vars.scopes.pop();
+                    vars.scopes.push(global_scope.clone());
 
-                globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
+                    env = Env {
+                        fns: env.fns,
+                        vars,
+                        rtype: Some(f.rtype.clone()),
+                        string_literals: env.string_literals,
+                        local_max_offset: f.args.iter().map(|arg| arg.typ.size()).sum(),
+                    };
+
+                    globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
+                } else {
+                    return Err(TypeError::OutOfScopes);
+                }
             }
             symbols::globals::Globals::VarDec(v) => {
                 globals.insert(
