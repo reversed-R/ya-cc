@@ -6,6 +6,6 @@ int main(){
   x = 3;
   y = &x;
   z = &y;
-  **z = 4;
+  **z = 5;
   return x;
 }

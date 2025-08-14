@@ -6,12 +6,17 @@ int printf(char *fmt, int c);
 int m(int a, int b) { return (a * b + 5000) / 10000; }
 
 int a(int *c, int *s, int d, int t) {
+  printf("a(): c: %d,", *c);
+  printf("s: %d,", *s);
+  printf("d: %d,", d);
+  printf("t: %d,", t);
   int k;
   int l;
   k = m(*c, d) - m(*s, t);
   l = m(*s, d) + m(*c, t);
   *c = k;
   *s = l;
+  printf("%c,", 10);
 
   return 0;
 }
@@ -53,6 +58,11 @@ int main3(int **vars, int *z, char *b) {
     w = 0;
     e = *ps;
 
+    printf("l: %d,", l);
+    printf("p: %d,", p);
+    printf("w: %d,", w);
+    printf("e: %d,", e);
+    printf("%c,", 10);
     int j;
     j = 0;
     while (j < 314) {
@@ -74,9 +84,6 @@ int main3(int **vars, int *z, char *b) {
           (m(m(l, *pr) - m(m(w, *pq), p), *pu) - m(m(w, *pr), p) - m(l, *pq) -
            m(m(e, *pv), p)) /
           *ps;
-      printf("j: %d,", j);
-      printf("f: %d,", f);
-      printxygon(x, y, g, o, N);
       if (y > 0) {
         if (g > z[o]) {
           if (22 > y) {
@@ -98,17 +105,6 @@ int main3(int **vars, int *z, char *b) {
     }
     i = i + 1;
     a(&p, &l, 9974 + i % 2, 714);
-  }
-  printf("%c[H", 27);
-  int k;
-  k = 0;
-  while (k < 1761) {
-    if (k % 80) {
-      putchar(b[k]);
-    } else {
-      printf("%c", 10);
-    }
-    k = k + 1;
   }
   usleep(5 * *ps);
   a(&*pq, &*pr, *ps - 8, 400);

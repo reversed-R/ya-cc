@@ -19,9 +19,15 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                 // nothing to do
             }
             symbols::globals::Globals::FnDef(f) => {
+                env = Env {
+                    fns: env.fns,
+                    vars: NestedScope::new(),
+                    rtype: Some(f.rtype.clone()),
+                    string_literals: env.string_literals,
+                    local_max_offset: f.args.iter().map(|arg| arg.typ.size()).sum(),
+                };
+
                 globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
-                env.vars = NestedScope::new();
-                env.local_max_offset = 0;
             }
             symbols::globals::Globals::VarDec(v) => {
                 globals.insert(
@@ -325,7 +331,6 @@ impl<'parsed> Env<'parsed> {
 
     pub fn end_local(&mut self) {
         self.vars.pop_scope();
-        // self.local_max_offset = 0;
 
         self.rtype = None;
     }

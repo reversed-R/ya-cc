@@ -1,7 +1,12 @@
 use crate::{
     parser::symbols::expressions::assignment,
     validator::{
-        expressions::{equality::EqualityExpr, unary::Unary},
+        expressions::{
+            equality::EqualityExpr,
+            postfix::PostfixExpr,
+            primary::{Literal, Primary},
+            unary::{RefUnaryOperator, Unary, UnaryOperator},
+        },
         Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
@@ -33,22 +38,56 @@ impl From<&assignment::AssignOperator> for AssignOperator {
     }
 }
 
+fn is_numeric_zero(src: &EqualityExpr) -> bool {
+    if src.rights.is_empty() {
+        if src.left.rights.is_empty() {
+            let arithm = &src.left.left;
+            if arithm.rights.is_empty() {
+                let mul = &arithm.left;
+
+                if mul.rights.is_empty() {
+                    let unary = &mul.left;
+
+                    if let UnaryOperator::None = unary.op {
+                        if let RefUnaryOperator::Deref(0) = &unary.refop {
+                            let postfix = &unary.right;
+
+                            if let PostfixExpr::Primary(Primary::Literal(Literal::Int(0))) = postfix
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
 impl ExprTypeValidate for assignment::AssignExpr {
     type ValidatedType = (Type, AssignExpr);
 
     fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
         let (src_typ, src) = self.right.validate(env)?;
-        let mut typ = src_typ;
+        let mut typ = src_typ.clone();
         let mut dsts = vec![];
 
         for left in self.lefts.iter().rev() {
             let (dst_typ, dst) = left.left.validate(env)?;
 
-            if !typ.equals(&dst_typ) {
+            if typ.equals(&dst_typ) {
+                // typ = Type::Primitive(PrimitiveType::Int);
+            } else if src_typ == Type::Primitive(PrimitiveType::Int)
+                && is_numeric_zero(&src)
+                && matches!(dst_typ, Type::PtrTo((_)))
+            {
+                typ = dst_typ;
+            } else {
                 return Err(TypeError::Mismatch(dst_typ, typ));
             }
 
-            typ = Type::Primitive(PrimitiveType::Int);
             dsts.push(AssignDst {
                 dst,
                 op: AssignOperator::from(&left.op),

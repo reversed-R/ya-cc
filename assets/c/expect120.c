@@ -1,20 +1,15 @@
-int main(){
-  return fact2(5);
-}
-
-int fact(int n){
+int fact(int n) {
   if (n > 1) {
     return n * fact(n - 1);
-  }
-  else {
+  } else {
     return 1;
   }
 }
 
-int fact2(int n){
+int fact2(int n) {
   int i;
   int res;
-  
+
   i = n;
   res = 1;
 
@@ -25,3 +20,5 @@ int fact2(int n){
 
   return res;
 }
+
+int main() { return fact2(5); }

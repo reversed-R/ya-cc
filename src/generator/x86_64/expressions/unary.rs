@@ -104,7 +104,7 @@ impl Unary {
 
                     println!("pop rax");
 
-                    for _ in 1..count {
+                    for _ in 0..count {
                         println!("mov rax, [rax]");
                     }
                     println!("push rax");
