@@ -42,9 +42,15 @@ impl LocalGenerate for Primary {
             Self::FnCall(f) => {
                 let id = env.increment_label();
 
-                for (i, arg) in f.args.iter().enumerate() {
+                for arg in f.args.iter().rev() {
                     arg.generate(env);
 
+                    // NOTE: push calculated value to stack,
+                    // because if pop to argument register as soon as calculate,
+                    // calculation of remaining argument may break argument registers
+                }
+
+                for (i, _) in f.args.iter().enumerate() {
                     if let Some(reg) = ARG_REGS.get(i) {
                         println!("pop {reg}");
                     } else {

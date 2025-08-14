@@ -75,7 +75,12 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
             let (right_typ, right) = r.right.validate(env)?;
 
             match typ.compare(&right_typ) {
-                TypeComarison::Equal => {}
+                TypeComarison::Equal => {
+                    rights.push(ArithmExprNode {
+                        op: ArithmOperator::new(&r.op, &typ),
+                        right,
+                    });
+                }
                 TypeComarison::ImplicitlyConvertableTo => {
                     typ = right_typ;
 

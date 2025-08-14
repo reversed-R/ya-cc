@@ -1,7 +1,11 @@
-int putchar(char c);
-int *memset(void *buf, int c, int n);
-int usleep(int usec);
-int printf(char *fmt, int c);
+#include <stdio.h>  // putchar(), printf()
+#include <string.h> // memset()
+#include <unistd.h> // usleep()
+/* int putchar(char c); */
+/* int *memset(void *buf, int c, int n); */
+/* int usleep(int usec); */
+/* int printf(char *fmt, int c); */
+/* int printf(char *fmt); */
 
 int m(int a, int b) { return (a * b + 5000) / 10000; }
 
@@ -19,7 +23,8 @@ int a(int *c, int *s, int d, int t) {
 int main() {
   int z[1760];
   char b[1760];
-  printf("%c[2J", 27);
+  /* printf("%c[2J", 27); */
+  printf("\033[2J");
   int s;
   int q;
   int r;
@@ -33,12 +38,7 @@ int main() {
 
   while (1) {
     memset(b, 32, 1760);
-    int im;
-    im = 0;
-    while (im < 1760) {
-      z[im] = 0;
-      im = im + 1;
-    }
+    memset(z, 0, 1760 * sizeof(q));
     int l;
     int p;
     l = 0;
@@ -73,36 +73,46 @@ int main() {
             (m(m(l, r) - m(m(w, q), p), u) - m(m(w, r), p) - m(l, q) -
              m(m(e, v), p)) /
             s;
-        if (y > 0) {
-          if (g > z[o]) {
-            if (22 > y) {
-              if (x > 0) {
-                if (80 > x) {
-                  z[o] = g;
-                  if (N >= 1) {
-                    b[o] = ".,-~:;=!*#$@"[N];
-                  } else {
-                    b[o] = ".,-~:;=!*#$@"[0];
-                  }
-                }
-              }
-            }
+        if (y > 0 && g > z[o] && 22 > y && x > 0 && 80 > x) {
+          z[o] = g;
+          if (N >= 1) {
+            b[o] = ".,-~:;=!*#$@"[N];
+          } else {
+            b[o] = ".,-~:;=!*#$@"[0];
           }
         }
+        /* if (y > 0) { */
+        /*   if (g > z[o]) { */
+        /*     if (22 > y) { */
+        /*       if (x > 0) { */
+        /*         if (80 > x) { */
+        /*           z[o] = g; */
+        /*           if (N >= 1) { */
+        /*             b[o] = ".,-~:;=!*#$@"[N]; */
+        /*           } else { */
+        /*             b[o] = ".,-~:;=!*#$@"[0]; */
+        /*           } */
+        /*         } */
+        /*       } */
+        /*     } */
+        /*   } */
+        /* } */
         j = j + 1;
         a(&e, &w, s - 2, 200);
       }
       i = i + 1;
       a(&p, &l, 9974 + i % 2, 714);
     }
-    printf("%c[H", 27);
+    /* printf("%c[H", 27); */
+    printf("\033[H");
     int k;
     k = 0;
     while (k < 1761) {
       if (k % 80) {
         putchar(b[k]);
       } else {
-        printf("%c", 10);
+        /* printf("%c", 10); */
+        putchar(10);
       }
       k = k + 1;
     }
