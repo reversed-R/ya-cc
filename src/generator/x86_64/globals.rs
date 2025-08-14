@@ -36,7 +36,7 @@ impl Function {
 
         for i in 0..self.arg_count {
             if let Some(reg) = ARG_REGS.get(i) {
-                println!("mov [rbp - {}], {}", i * 8, reg);
+                println!("mov [rbp - {}], {}", (i + 1) * 8, reg);
             } else {
                 panic!("Too Many Args for Function Call");
             }

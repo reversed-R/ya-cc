@@ -25,11 +25,17 @@ int a(int *c, int *s, int d, int t) {
 }
 
 int main3(int **vars, int *z, char *b) {
-  int *ps = vars[0];
-  int *pq = vars[1];
-  int *pr = vars[2];
-  int *pu = vars[3];
-  int *pv = vars[4];
+  int *ps;
+  int *pq;
+  int *pr;
+  int *pu;
+  int *pv;
+
+  ps = vars[0];
+  pq = vars[1];
+  pr = vars[2];
+  pu = vars[3];
+  pv = vars[4];
 
   int l;
   int p;
