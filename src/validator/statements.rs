@@ -4,7 +4,7 @@ pub mod loop_stmt;
 pub mod vardec_stmt;
 
 use crate::validator::{
-    expressions::Expr,
+    expressions::Exprs,
     statements::{branch_stmt::BranchStmt, loop_stmt::LoopStmt},
     Env, ExprTypeValidate, StmtTypeValidate, TypeComarison, TypeError,
 };
@@ -12,8 +12,8 @@ use crate::validator::{
 #[derive(Debug)]
 pub enum Stmt {
     Compound(Vec<Stmt>),
-    Expr(Expr),
-    Return(Expr),
+    Expr(Exprs),
+    Return(Exprs),
     Branch(Box<BranchStmt>),
     Loop(Box<LoopStmt>),
     VarDec, // in codegen, variable declaration statement is nothing to do

@@ -1,29 +1,12 @@
 use crate::{
     parser::symbols::expressions::relational,
-    validator::{expressions::arithmetic::ArithmExpr, Env, ExprTypeValidate, Type, TypeError},
+    validator::{
+        expressions::{BinOperator, Binary, Exprs},
+        Env, ExprTypeValidate, Type, TypeError,
+    },
 };
 
-#[derive(Debug)]
-pub struct RelationalExpr {
-    pub left: ArithmExpr,
-    pub rights: Vec<RelationalExprNode>,
-}
-
-#[derive(Debug)]
-pub struct RelationalExprNode {
-    pub op: RelationalOperator,
-    pub right: ArithmExpr,
-}
-
-#[derive(Debug)]
-pub enum RelationalOperator {
-    Lesser,  // <
-    Greater, // >
-    LesEq,   // <=
-    GrtEq,   // >=
-}
-
-impl From<&relational::RelationalOperator> for RelationalOperator {
+impl From<&relational::RelationalOperator> for BinOperator {
     fn from(value: &relational::RelationalOperator) -> Self {
         match value {
             relational::RelationalOperator::Lesser => Self::Lesser,
@@ -35,11 +18,14 @@ impl From<&relational::RelationalOperator> for RelationalOperator {
 }
 
 impl ExprTypeValidate for relational::RelationalExpr {
-    type ValidatedType = (Type, RelationalExpr);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
         let (typ, left) = self.left.validate(env)?;
-        let mut rights = vec![];
+
+        if self.rights.is_empty() {
+            return Ok((typ, left));
+        }
+
+        let mut expr = left;
 
         for r in &self.rights {
             let (right_typ, right) = r.right.validate(env)?;
@@ -48,12 +34,13 @@ impl ExprTypeValidate for relational::RelationalExpr {
                 return Err(TypeError::Mismatch(typ, right_typ));
             }
 
-            rights.push(RelationalExprNode {
-                op: RelationalOperator::from(&r.op),
-                right,
+            expr = Exprs::Binary(Binary {
+                op: BinOperator::from(&r.op),
+                left: Box::new(expr),
+                right: Box::new(right),
             });
         }
 
-        Ok((typ, RelationalExpr { left, rights }))
+        Ok((typ, expr))
     }
 }

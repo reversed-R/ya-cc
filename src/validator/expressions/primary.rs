@@ -1,65 +1,41 @@
 use crate::{
     parser::symbols::expressions::primary,
     validator::{
-        expressions::Expr, Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
-        Variable,
+        expressions::{Exprs, FnCall, Literal, Primary},
+        Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
     },
 };
 
-#[derive(Debug)]
-pub enum Primary {
-    Literal(Literal),
-    Variable(Variable),
-    FnCall(FnCall),
-    Expr(Box<Expr>),
-}
-
-#[derive(Debug)]
-pub enum Literal {
-    Int(i64),
-    Float(f64),
-    Char(u8),
-    String(usize),
-}
-
-#[derive(Debug)]
-pub struct FnCall {
-    pub name: String,
-    pub args: Vec<Expr>,
-}
-
 impl ExprTypeValidate for primary::Primary {
-    type ValidatedType = (Type, Primary);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
         match self {
             Self::Literal(lit) => match lit {
                 primary::Literal::Int(i) => Ok((
                     Type::Primitive(PrimitiveType::Int),
-                    Primary::Literal(Literal::Int(*i)),
+                    Exprs::Primary(Primary::Literal(Literal::Int(*i))), // Primary::Literal(Literal::Int(*i)),
                 )),
                 primary::Literal::Float(f) => Ok((
                     // Type::Primitive(PrimitiveType::Float),
                     Type::Primitive(PrimitiveType::Int),
-                    Primary::Literal(Literal::Float(*f)),
+                    Exprs::Primary(Primary::Literal(Literal::Float(*f))),
                 )),
                 primary::Literal::Char(c) => Ok((
                     // Type::Primitive(PrimitiveType::Float),
                     Type::Primitive(PrimitiveType::Char),
-                    Primary::Literal(Literal::Char(*c)),
+                    Exprs::Primary(Primary::Literal(Literal::Char(*c))),
                 )),
                 primary::Literal::StringLiteral(s) => {
                     if let Some(id) = env.string_literals.get(s) {
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
-                            Primary::Literal(Literal::String(*id)),
+                            Exprs::Primary(Primary::Literal(Literal::String(*id))),
                         ))
                     } else {
                         let id = env.string_literals.values().len();
                         env.string_literals.insert(s.clone(), id);
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
-                            Primary::Literal(Literal::String(id)),
+                            Exprs::Primary(Primary::Literal(Literal::String(id))),
                         ))
                     }
                     // TODO:
@@ -71,12 +47,15 @@ impl ExprTypeValidate for primary::Primary {
                     .get(id)
                     .ok_or(TypeError::VariableNotFound(id.clone()))?;
 
-                Ok((var.typ.clone(), Primary::Variable(var.clone())))
+                Ok((
+                    var.typ.clone(),
+                    Exprs::Primary(Primary::Variable(var.clone())),
+                ))
             }
             Self::Expr(expr) => {
                 let (typ, expr) = expr.validate(env)?;
 
-                Ok((typ, Primary::Expr(Box::new(expr))))
+                Ok((typ, Exprs::Primary(Primary::Expr(Box::new(expr)))))
             }
             Self::FnCall(fcalling) => {
                 env.fns
@@ -101,12 +80,6 @@ impl ExprTypeValidate for primary::Primary {
                                 ));
                             }
                         }
-                        // if !acalling_typ.equals(&acallee.typ) {
-                        //     return Err(TypeError::ArgumentMismatch(
-                        //         Some(acallee.typ.clone()),
-                        //         Some(acalling_typ),
-                        //     ));
-                        // }
                     } else {
                         return Err(TypeError::ArgumentMismatch(None, Some(acalling_typ)));
                     }
@@ -121,10 +94,10 @@ impl ExprTypeValidate for primary::Primary {
                 } else {
                     Ok((
                         fcallee.rtype.clone(),
-                        Primary::FnCall(FnCall {
+                        Exprs::Primary(Primary::FnCall(FnCall {
                             name: fcalling.name.clone(),
                             args,
-                        }),
+                        })),
                     ))
                 }
             }

@@ -1,10 +1,10 @@
 use crate::validator::{
-    expressions::Expr, statements::Stmt, Env, ExprTypeValidate, StmtTypeValidate, TypeError,
+    expressions::Exprs, statements::Stmt, Env, ExprTypeValidate, StmtTypeValidate, TypeError,
 };
 
 #[derive(Debug)]
 pub struct LoopStmt {
-    pub cond: Expr,
+    pub cond: Exprs,
     pub stmt: Stmt,
 }
 

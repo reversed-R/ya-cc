@@ -1,28 +1,16 @@
 use crate::{
-    parser::symbols::expressions,
-    parser::symbols::expressions::{
-        arithmetic, assignment, multiplication, postfix, primary, unary, relational, equality, 
-    },
+    parser::symbols::expressions::{self, arithmetic, assignment, equality, multiplication, postfix, primary, relational, unary},
     validator::{
         expressions::{
-            primary::Primary,
-            unary::Unary ,
+             Exprs, Primary ,
         },
         Env, ExprTypeValidate, Type, TypeError,
     },
 };
 
-#[derive(Debug)]
-pub enum PostfixExpr {
-    Primary(Primary),
-    Unary(Box<Unary>), // NOTE: 
-                       // array[index] converted *(array + index)
-}
 
 impl ExprTypeValidate for postfix::PostfixExpr {
-    type ValidatedType = (Type, PostfixExpr);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
         match self {
             Self::Primary(prim) => {
                 let (mut typ, prim) = prim.validate(env)?;
@@ -31,7 +19,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                     typ = Type::PtrTo(atyp);
                 }
 
-                Ok((typ, PostfixExpr::Primary(prim)))
+                Ok((typ, Exprs::Primary(Primary::Expr(Box::new(prim)))))
             }
             Self::Index(postfix, expr) => {
                 let u = unary::Unary {
@@ -123,7 +111,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                 
                 println!("# typ: {typ:?}");
 
-                Ok((typ, PostfixExpr::Unary(Box::new(u))))
+                Ok((typ, Exprs::Primary(Primary::Expr(Box::new(u)))))
             }
         }
     }

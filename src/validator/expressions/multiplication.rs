@@ -1,43 +1,30 @@
 use crate::{
     parser::symbols::expressions::multiplication,
-    validator::{expressions::unary::Unary, Env, ExprTypeValidate, Type, TypeError},
+    validator::{
+        expressions::{BinOperator, Binary, Exprs},
+        Env, ExprTypeValidate, Type, TypeError,
+    },
 };
 
-#[derive(Debug)]
-pub struct MulExpr {
-    pub left: Unary,
-    pub rights: Vec<MulExprNode>,
-}
-
-#[derive(Debug)]
-pub struct MulExprNode {
-    pub op: MulOperator,
-    pub right: Unary,
-}
-
-#[derive(Debug)]
-pub enum MulOperator {
-    Mul,
-    Div,
-    Mod,
-}
-
-impl From<&multiplication::MulOperator> for MulOperator {
+impl From<&multiplication::MulOperator> for BinOperator {
     fn from(value: &multiplication::MulOperator) -> Self {
         match value {
-            multiplication::MulOperator::Mul => MulOperator::Mul,
-            multiplication::MulOperator::Div => MulOperator::Div,
-            multiplication::MulOperator::Mod => MulOperator::Mod,
+            multiplication::MulOperator::Mul => BinOperator::Imul,
+            multiplication::MulOperator::Div => BinOperator::Idiv,
+            multiplication::MulOperator::Mod => BinOperator::Mod,
         }
     }
 }
 
 impl ExprTypeValidate for crate::parser::symbols::expressions::multiplication::MulExpr {
-    type ValidatedType = (Type, MulExpr);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
         let (typ, left) = self.left.validate(env)?;
-        let mut rights = vec![];
+
+        if self.rights.is_empty() {
+            return Ok((typ, left));
+        }
+
+        let mut expr = left;
 
         for r in &self.rights {
             let (right_typ, right) = r.right.validate(env)?;
@@ -46,12 +33,13 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::multiplication::M
                 return Err(TypeError::Mismatch(typ, right_typ));
             }
 
-            rights.push(MulExprNode {
-                op: MulOperator::from(&r.op),
-                right,
+            expr = Exprs::Binary(Binary {
+                op: BinOperator::from(&r.op),
+                left: Box::new(expr),
+                right: Box::new(right),
             });
         }
 
-        Ok((typ, MulExpr { left, rights }))
+        Ok((typ, expr))
     }
 }

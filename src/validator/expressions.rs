@@ -7,19 +7,77 @@ pub mod primary;
 pub mod relational;
 pub mod unary;
 
-use crate::validator::{
-    expressions::assignment::AssignExpr, Env, ExprTypeValidate, Type, TypeError,
-};
+use crate::validator::{Env, ExprTypeValidate, Type, TypeError, Variable};
 
 #[derive(Debug)]
-pub struct Expr(pub AssignExpr);
+pub enum Primary {
+    Literal(Literal),
+    Variable(Variable),
+    FnCall(FnCall),
+    Expr(Box<Exprs>),
+}
+
+#[derive(Debug)]
+pub struct FnCall {
+    pub name: String,
+    pub args: Vec<Exprs>,
+}
+
+#[derive(Debug)]
+pub enum Literal {
+    Int(i64),
+    Float(f64),
+    Char(u8),
+    String(usize),
+}
+
+#[derive(Debug)]
+pub enum Exprs {
+    Primary(Primary),
+    Unary(Unary),
+    Binary(Binary),
+}
+
+#[derive(Debug)]
+pub struct Unary {
+    op: UnOperator,
+    expr: Box<Exprs>,
+}
+
+#[derive(Debug)]
+pub struct Binary {
+    op: BinOperator,
+    left: Box<Exprs>,
+    right: Box<Exprs>,
+}
+
+#[derive(Debug)]
+pub enum BinOperator {
+    Iadd,
+    Isub,
+    Padd,
+    Psub,
+    Imul,
+    Idiv,
+    Mod,
+    Greater,
+    Lesser,
+    GrtEq,
+    LesEq,
+    Equal,
+    NotEq,
+    Assign,
+}
+
+#[derive(Debug)]
+pub enum UnOperator {
+    Neg,
+    Ref,
+    Deref(usize),
+}
 
 impl ExprTypeValidate for crate::parser::symbols::expressions::Expr {
-    type ValidatedType = (Type, Expr);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
-        let (typ, ass) = self.0.validate(env)?;
-
-        Ok((typ, Expr(ass)))
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+        self.0.validate(env)
     }
 }

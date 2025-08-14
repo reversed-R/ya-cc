@@ -1,46 +1,19 @@
 use crate::{
     parser::symbols::expressions::arithmetic,
     validator::{
-        expressions::multiplication::MulExpr, Env, ExprTypeValidate, PrimitiveType, Type,
-        TypeComarison, TypeError,
+        expressions::{BinOperator, Binary, Exprs},
+        Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
     },
 };
 
-#[derive(Debug)]
-pub struct ArithmExpr {
-    pub left: MulExpr,
-    pub rights: Vec<ArithmExprNode>,
-}
-
-#[derive(Debug)]
-pub struct ArithmExprNode {
-    pub op: ArithmOperator,
-    pub right: MulExpr,
-}
-
-// TODO:
-// devide operations by type
-// e.g. iadd, isub, fadd, padd
-#[derive(Debug)]
-pub enum ArithmOperator {
-    Iadd,
-    Isub,
-    Fadd,
-    Fsub,
-    Padd,
-    Psub,
-    Cadd,
-    Csub,
-}
-
-impl ArithmOperator {
-    fn new(op: &arithmetic::ArithmOperator, typ: &Type) -> Self {
+impl BinOperator {
+    fn from(op: &arithmetic::ArithmOperator, typ: &Type) -> Self {
         match op {
             arithmetic::ArithmOperator::Add => match typ {
                 Type::Primitive(prim) => match prim {
                     PrimitiveType::Int => Self::Iadd,
                     // PrimitiveType::Float => Self::Fadd,
-                    PrimitiveType::Char => Self::Cadd,
+                    PrimitiveType::Char => Self::Iadd,
                     PrimitiveType::Void => {
                         panic!("Cannot add or sub void");
                     }
@@ -52,7 +25,7 @@ impl ArithmOperator {
                 Type::Primitive(prim) => match prim {
                     PrimitiveType::Int => Self::Isub,
                     // PrimitiveType::Float => Self::Fsub,
-                    PrimitiveType::Char => Self::Csub,
+                    PrimitiveType::Char => Self::Isub,
                     PrimitiveType::Void => {
                         panic!("Cannot add or sub void");
                     }
@@ -65,34 +38,40 @@ impl ArithmOperator {
 }
 
 impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::ArithmExpr {
-    type ValidatedType = (Type, ArithmExpr);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
         let (mut typ, left) = self.left.validate(env)?;
-        let mut rights = vec![];
+
+        if self.rights.is_empty() {
+            return Ok((typ, left));
+        }
+
+        let mut expr = left;
 
         for r in &self.rights {
             let (right_typ, right) = r.right.validate(env)?;
 
             match typ.compare(&right_typ) {
                 TypeComarison::Equal => {
-                    rights.push(ArithmExprNode {
-                        op: ArithmOperator::new(&r.op, &typ),
-                        right,
+                    expr = Exprs::Binary(Binary {
+                        op: BinOperator::from(&r.op, &typ),
+                        left: Box::new(expr),
+                        right: Box::new(right),
                     });
                 }
                 TypeComarison::ImplicitlyConvertableTo => {
                     typ = right_typ;
 
-                    rights.push(ArithmExprNode {
-                        op: ArithmOperator::new(&r.op, &typ),
-                        right,
+                    expr = Exprs::Binary(Binary {
+                        op: BinOperator::from(&r.op, &typ),
+                        left: Box::new(expr),
+                        right: Box::new(right),
                     });
                 }
                 TypeComarison::ImplicitlyConvertableFrom => {
-                    rights.push(ArithmExprNode {
-                        op: ArithmOperator::new(&r.op, &typ),
-                        right,
+                    expr = Exprs::Binary(Binary {
+                        op: BinOperator::from(&r.op, &typ),
+                        left: Box::new(expr),
+                        right: Box::new(right),
                     });
                 }
                 TypeComarison::ImplicitlyUnconvertable => {
@@ -101,6 +80,6 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
             }
         }
 
-        Ok((typ, ArithmExpr { left, rights }))
+        Ok((typ, expr))
     }
 }

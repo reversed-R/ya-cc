@@ -1,27 +1,12 @@
 use crate::{
     parser::symbols::expressions::equality,
-    validator::{expressions::relational::RelationalExpr, Env, ExprTypeValidate, Type, TypeError},
+    validator::{
+        expressions::{BinOperator, Binary, Exprs},
+        Env, ExprTypeValidate, Type, TypeError,
+    },
 };
 
-#[derive(Debug)]
-pub struct EqualityExpr {
-    pub left: RelationalExpr,
-    pub rights: Vec<EqualityExprNode>,
-}
-
-#[derive(Debug)]
-pub struct EqualityExprNode {
-    pub op: EqualityOperator,
-    pub right: RelationalExpr,
-}
-
-#[derive(Debug)]
-pub enum EqualityOperator {
-    Equal,
-    NotEq,
-}
-
-impl From<&equality::EqualityOperator> for EqualityOperator {
+impl From<&equality::EqualityOperator> for BinOperator {
     fn from(value: &equality::EqualityOperator) -> Self {
         match value {
             equality::EqualityOperator::Equal => Self::Equal,
@@ -31,11 +16,14 @@ impl From<&equality::EqualityOperator> for EqualityOperator {
 }
 
 impl ExprTypeValidate for equality::EqualityExpr {
-    type ValidatedType = (Type, EqualityExpr);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, super::Exprs), TypeError> {
         let (typ, left) = self.left.validate(env)?;
-        let mut rights = vec![];
+
+        if self.rights.is_empty() {
+            return Ok((typ, left));
+        }
+
+        let mut expr = left;
 
         for r in &self.rights {
             let (right_typ, right) = r.right.validate(env)?;
@@ -44,12 +32,13 @@ impl ExprTypeValidate for equality::EqualityExpr {
                 return Err(TypeError::Mismatch(typ, right_typ));
             }
 
-            rights.push(EqualityExprNode {
-                op: EqualityOperator::from(&r.op),
-                right,
+            expr = Exprs::Binary(Binary {
+                op: BinOperator::from(&r.op),
+                left: Box::new(expr),
+                right: Box::new(right),
             });
         }
 
-        Ok((typ, EqualityExpr { left, rights }))
+        Ok((typ, expr))
     }
 }

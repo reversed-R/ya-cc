@@ -1,47 +1,23 @@
 use crate::{
     parser::symbols::expressions::unary,
     validator::{
-        expressions::{
-            postfix::PostfixExpr,
-            primary::{Literal, Primary},
-        },
+        expressions::{Exprs, Literal, Primary, UnOperator, Unary},
         Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
 
-#[derive(Debug)]
-pub struct Unary {
-    pub op: UnaryOperator,
-    pub refop: RefUnaryOperator,
-    pub right: PostfixExpr,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum UnaryOperator {
-    None,
-    Neg,
-}
-
-impl From<&unary::UnaryOperator> for UnaryOperator {
+impl From<&unary::UnaryOperator> for Option<UnOperator> {
     fn from(value: &unary::UnaryOperator) -> Self {
         match value {
-            unary::UnaryOperator::SizeOf => Self::None,
-            unary::UnaryOperator::Plus => Self::None,
-            unary::UnaryOperator::Minus => Self::Neg,
+            unary::UnaryOperator::SizeOf => None,
+            unary::UnaryOperator::Plus => None,
+            unary::UnaryOperator::Minus => Some(UnOperator::Neg),
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub enum RefUnaryOperator {
-    Ref,          // &
-    Deref(usize), // *
-}
-
 impl ExprTypeValidate for unary::Unary {
-    type ValidatedType = (Type, Unary);
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, super::Exprs), TypeError> {
         let (mut typ, mut right) = self.right.right.validate(env)?;
         let mut ref_count: isize = 0;
 
@@ -62,23 +38,51 @@ impl ExprTypeValidate for unary::Unary {
             }
         }
 
-        let op = UnaryOperator::from(&self.op);
-
         let refop;
 
         if ref_count >= 0 {
-            refop = RefUnaryOperator::Deref(ref_count as usize);
+            refop = UnOperator::Deref(ref_count as usize);
         } else if ref_count == -1 {
-            refop = RefUnaryOperator::Ref;
+            refop = UnOperator::Ref;
         } else {
             return Err(TypeError::DerefNotAllowed(typ));
         }
 
-        if let unary::UnaryOperator::SizeOf = &self.op {
-            typ = Type::Primitive(PrimitiveType::Int);
-            right = PostfixExpr::Primary(Primary::Literal(Literal::Int(typ.size() as i64)));
+        let is_neg: bool;
+
+        match &self.op {
+            unary::UnaryOperator::SizeOf => {
+                is_neg = false;
+                typ = Type::Primitive(PrimitiveType::Int);
+                right = Exprs::Primary(Primary::Literal(Literal::Int(typ.size() as i64)));
+            }
+            unary::UnaryOperator::Plus => {
+                is_neg = false;
+            }
+            unary::UnaryOperator::Minus => {
+                is_neg = true;
+            }
         }
 
-        Ok((typ, Unary { op, refop, right }))
+        if is_neg {
+            Ok((
+                typ,
+                Exprs::Unary(Unary {
+                    op: UnOperator::Neg,
+                    expr: Box::new(Exprs::Unary(Unary {
+                        op: refop,
+                        expr: Box::new(right),
+                    })),
+                }),
+            ))
+        } else {
+            Ok((
+                typ,
+                Exprs::Unary(Unary {
+                    op: refop,
+                    expr: Box::new(right),
+                }),
+            ))
+        }
     }
 }

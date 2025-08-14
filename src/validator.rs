@@ -6,7 +6,7 @@ use std::{collections::HashMap, ops::Deref};
 
 use crate::{
     parser::symbols::{self, globals::FnDef, statements::var_dec::VarDec},
-    validator::globals::Function,
+    validator::{expressions::Exprs, globals::Function},
 };
 
 pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
@@ -259,9 +259,7 @@ pub trait StmtTypeValidate {
 }
 
 pub trait ExprTypeValidate {
-    type ValidatedType;
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError>;
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError>;
 }
 
 #[derive(Debug)]
