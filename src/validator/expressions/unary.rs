@@ -75,6 +75,8 @@ impl ExprTypeValidate for unary::Unary {
                     })),
                 }),
             ))
+        } else if ref_count == 0 {
+            Ok((typ, right))
         } else {
             Ok((
                 typ,
