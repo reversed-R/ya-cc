@@ -40,11 +40,11 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
             Self::Return(expr) => {
                 let (expr_typ, expr) = expr.validate(env)?;
 
-                if let Some(rtype) = &env.rtype {
-                    match rtype.compare(&expr_typ) {
+                if let Some(local) = &env.local {
+                    match local.rtype.compare(&expr_typ) {
                         TypeComarison::Equal => Ok(Stmt::Return(expr)),
                         TypeComarison::ImplicitlyConvertableFrom => Ok(Stmt::Return(expr)),
-                        _ => Err(TypeError::Mismatch(rtype.clone(), expr_typ)),
+                        _ => Err(TypeError::Mismatch(local.rtype.clone(), expr_typ)),
                     }
                 } else {
                     Err(TypeError::OutOfScopes)

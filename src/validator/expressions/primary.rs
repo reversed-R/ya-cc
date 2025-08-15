@@ -25,14 +25,14 @@ impl primary::Primary {
                     Primary::Literal(Literal::Char(*c)),
                 )),
                 primary::Literal::StringLiteral(s) => {
-                    if let Some(id) = env.string_literals.get(s) {
+                    if let Some(id) = env.global.string_literals.get(s) {
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
                             Primary::Literal(Literal::String(*id)),
                         ))
                     } else {
-                        let id = env.string_literals.values().len();
-                        env.string_literals.insert(s.clone(), id);
+                        let id = env.global.string_literals.values().len();
+                        env.global.string_literals.insert(s.clone(), id);
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
                             Primary::Literal(Literal::String(id)),
@@ -42,8 +42,7 @@ impl primary::Primary {
             },
             Self::Identifier(id) => {
                 let var = env
-                    .vars
-                    .get(id)
+                    .get_var(id)
                     .ok_or(TypeError::VariableNotFound(id.clone()))?;
 
                 Ok((var.typ.clone(), Primary::Variable(var.clone())))
@@ -54,7 +53,8 @@ impl primary::Primary {
                 Ok((typ, Primary::Expr(Box::new(expr))))
             }
             Self::FnCall(fcalling) => {
-                env.fns
+                env.global
+                    .fns
                     .get(&fcalling.name)
                     .ok_or(TypeError::FunctionNotFound(fcalling.name.clone()))?;
 
@@ -64,7 +64,7 @@ impl primary::Primary {
                 while let Some(acalling) = fcalling.args.get(i) {
                     let (acalling_typ, acalling) = acalling.validate(env)?;
 
-                    let fcallee = env.fns.get(&fcalling.name).unwrap();
+                    let fcallee = env.global.fns.get(&fcalling.name).unwrap();
                     if let Some(acallee) = fcallee.args.get(i) {
                         match acallee.typ.compare(&acalling_typ) {
                             TypeComarison::Equal => {}
@@ -84,7 +84,7 @@ impl primary::Primary {
                     args.push(acalling);
                 }
 
-                let fcallee = env.fns.get(&fcalling.name).unwrap();
+                let fcallee = env.global.fns.get(&fcalling.name).unwrap();
                 if let Some(acallee) = fcallee.args.get(i) {
                     Err(TypeError::ArgumentMismatch(Some(acallee.typ.clone()), None))
                 } else {

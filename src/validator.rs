@@ -19,23 +19,11 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                 // nothing to do
             }
             symbols::globals::Globals::FnDef(f) => {
-                if let Some(global_scope) = env.vars.scopes.first() {
-                    let mut vars = NestedScope::new();
-                    vars.scopes.pop();
-                    vars.scopes.push(global_scope.clone());
+                env.begin_local(&f.args, &f.rtype);
 
-                    env = Env {
-                        fns: env.fns,
-                        vars,
-                        rtype: Some(f.rtype.clone()),
-                        string_literals: env.string_literals,
-                        local_max_offset: f.args.iter().map(|arg| arg.typ.size()).sum(),
-                    };
+                globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
 
-                    globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
-                } else {
-                    return Err(TypeError::OutOfScopes);
-                }
+                env.end_local();
             }
             symbols::globals::Globals::VarDec(v) => {
                 globals.insert(
@@ -51,7 +39,7 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
 
     Ok(Program {
         globals,
-        string_literals: env.string_literals,
+        string_literals: env.global.string_literals,
     })
 }
 
@@ -92,14 +80,6 @@ impl PrimitiveType {
             Self::Void => 0,
         }
     }
-
-    // pub fn aligned_size(&self) -> usize {
-    //     match self {
-    //         Self::Int => 8,
-    //         // Self::Float => 8,
-    //         Self::Char => 1,
-    //     }
-    // }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -133,14 +113,6 @@ impl Type {
             Self::Array(typ, _) => typ.align(),
         }
     }
-
-    // pub fn aligned_size(&self) -> usize {
-    //     match self {
-    //         Self::PtrTo(_) => 8,
-    //         Self::Primitive(p) => p.aligned_size(),
-    //         Self::Array(typ, size) => typ.aligned_size() * size,
-    //     }
-    // }
 
     pub fn compare(&self, other: &Self) -> TypeComarison {
         // ただし、Arrayについてはその識別子単体が渡されたと考える
@@ -264,35 +236,50 @@ pub trait ExprTypeValidate {
 
 #[derive(Debug)]
 pub struct Env<'parsed> {
+    global: EnvGlobal<'parsed>,
+    local: Option<EnvLocal>,
+}
+
+#[derive(Debug)]
+struct EnvGlobal<'parsed> {
     fns: HashMap<String, FnSignature<'parsed>>,
-    vars: NestedScope,
-    rtype: Option<Type>,
-    local_max_offset: usize,
+    vars: HashMap<String, Variable>,
     string_literals: HashMap<String, usize>,
 }
 
+#[derive(Debug)]
+struct EnvLocal {
+    rtype: Type,
+    vars: Vec<HashMap<String, Variable>>,
+    local_max_offset: usize,
+}
+
 impl<'parsed> Env<'parsed> {
-    pub fn new(globals: &'parsed [symbols::globals::Globals]) -> Result<Self, TypeError> {
-        let mut fns_map = HashMap::<String, FnSignature>::new();
-        let mut vars = NestedScope::new();
+    fn new(globals: &'parsed [symbols::globals::Globals]) -> Result<Self, TypeError> {
+        let mut fns = HashMap::<String, FnSignature>::new();
+        let mut vars = HashMap::new();
 
         for g in globals {
             match g {
                 symbols::globals::Globals::FnDef(f) => {
-                    if !fns_map.contains_key(&f.name) {
-                        fns_map.insert(f.name.clone(), FnSignature::from(f));
+                    if !fns.contains_key(&f.name) {
+                        fns.insert(f.name.clone(), FnSignature::from(f));
                     }
                 }
                 symbols::globals::Globals::VarDec(v) => {
-                    if let Some(scope) = vars.scopes.last() {
-                        if !scope.contains_key(&v.name) {
-                            vars.insert(v.name.clone(), v.typ.clone())?;
-                        }
+                    if !vars.contains_key(&v.name) {
+                        vars.insert(
+                            v.name.clone(),
+                            Variable {
+                                typ: v.typ.clone(),
+                                addr: VarAddr::Global(v.name.clone()),
+                            },
+                        );
                     }
                 }
                 symbols::globals::Globals::FnDeclare(f) => {
-                    if !fns_map.contains_key(&f.name) {
-                        fns_map.insert(
+                    if !fns.contains_key(&f.name) {
+                        fns.insert(
                             f.name.clone(),
                             FnSignature {
                                 args: &f.args,
@@ -305,19 +292,24 @@ impl<'parsed> Env<'parsed> {
         }
 
         Ok(Self {
-            fns: fns_map,
-            vars,
-            rtype: None,
-            local_max_offset: 0,
-            string_literals: HashMap::new(),
+            global: EnvGlobal {
+                fns,
+                vars,
+                string_literals: HashMap::new(),
+            },
+            local: None,
         })
     }
 
-    pub fn begin_local(&mut self, args: &[VarDec], rtype: &Type) {
-        self.vars.push_scope();
+    fn begin_local(&mut self, args: &[VarDec], rtype: &Type) {
+        self.local = Some(EnvLocal {
+            rtype: rtype.clone(),
+            vars: vec![HashMap::new()],
+            local_max_offset: 0,
+        });
 
         for arg in args {
-            if let Err(e) = self.vars.insert(arg.name.clone(), arg.typ.clone()) {
+            if let Err(e) = self.insert_var(arg.name.clone(), arg.typ.clone()) {
                 match e {
                     TypeError::OutOfScopes => {
                         panic!("Compiler Error, Out of Scopes");
@@ -332,32 +324,79 @@ impl<'parsed> Env<'parsed> {
             }
         }
 
-        self.rtype = Some(rtype.clone());
+        if let Some(local) = &mut self.local {
+            local.rtype = rtype.clone();
+        }
     }
 
-    pub fn end_local(&mut self) {
-        self.vars.pop_scope();
-
-        self.rtype = None;
+    fn end_local(&mut self) {
+        self.local = None;
     }
 
     pub fn begin_scope(&mut self) {
-        self.vars.push_scope();
+        if let Some(local) = &mut self.local {
+            local.vars.push(HashMap::new());
+        }
     }
 
     pub fn end_scope(&mut self) {
-        self.vars.pop_scope();
+        if let Some(local) = &mut self.local {
+            local.vars.pop();
+        }
     }
 
     pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        self.vars.insert(var, typ)?;
+        let offset = (self.get_local_varsize_sum() + typ.size()).next_multiple_of(typ.align());
 
-        let cur = self.vars.get_varsize_sum();
-        if self.local_max_offset < cur {
-            self.local_max_offset = cur;
+        if let Some(local) = &mut self.local {
+            if let Some(last_scope) = local.vars.last_mut() {
+                if !last_scope.contains_key(&var) {
+                    last_scope.insert(
+                        var,
+                        Variable {
+                            typ,
+                            addr: VarAddr::Local(offset),
+                        },
+                    );
+
+                    if local.local_max_offset < offset {
+                        local.local_max_offset = offset;
+                    }
+
+                    Ok(())
+                } else {
+                    Err(TypeError::VariableConflict(var))
+                }
+            } else {
+                Err(TypeError::OutOfScopes)
+            }
+        } else {
+            Err(TypeError::OutOfScopes)
+        }
+    }
+
+    pub fn get_var(&mut self, var: &String) -> Option<&Variable> {
+        if let Some(local) = &mut self.local {
+            for scope in local.vars.iter().rev() {
+                if let Some(var) = scope.get(var) {
+                    return Some(var);
+                }
+            }
         }
 
-        Ok(())
+        self.global.vars.get(var)
+    }
+
+    fn get_local_varsize_sum(&self) -> usize {
+        if let Some(local) = &self.local {
+            local
+                .vars
+                .iter()
+                .map(|scope| scope.values().map(|v| v.typ.size()).sum::<usize>())
+                .sum::<usize>()
+        } else {
+            0
+        }
     }
 }
 
@@ -371,66 +410,6 @@ pub enum VarAddr {
 pub struct Variable {
     pub typ: Type,
     pub addr: VarAddr,
-}
-
-#[derive(Debug)]
-pub struct NestedScope {
-    scopes: Vec<HashMap<String, Variable>>,
-}
-
-impl NestedScope {
-    fn new() -> Self {
-        Self {
-            scopes: vec![HashMap::new()], // global scope
-        }
-    }
-
-    fn push_scope(&mut self) {
-        self.scopes.push(HashMap::new());
-    }
-
-    fn pop_scope(&mut self) {
-        self.scopes.pop();
-    }
-
-    fn insert(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset = (self.get_varsize_sum() + typ.size()).next_multiple_of(typ.align());
-
-        if let Some(last) = self.scopes.last_mut() {
-            if !last.contains_key(&var) {
-                last.insert(
-                    var.clone(),
-                    Variable {
-                        typ,
-                        addr: VarAddr::Local(offset),
-                    },
-                );
-
-                Ok(())
-            } else {
-                Err(TypeError::VariableConflict(var))
-            }
-        } else {
-            Err(TypeError::OutOfScopes)
-        }
-    }
-
-    pub fn get(&self, var: &String) -> Option<&Variable> {
-        for scope in self.scopes.iter().rev() {
-            if let Some(var) = scope.get(var) {
-                return Some(var);
-            }
-        }
-
-        None
-    }
-
-    fn get_varsize_sum(&self) -> usize {
-        self.scopes
-            .iter()
-            .map(|scope| scope.values().map(|v| v.typ.size()).sum::<usize>())
-            .sum::<usize>()
-    }
 }
 
 #[derive(Debug)]
