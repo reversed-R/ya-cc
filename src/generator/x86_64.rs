@@ -2,7 +2,7 @@ mod expressions;
 mod globals;
 mod statements;
 
-use crate::validator::{Globals, Program, VarAddr};
+use crate::validator::{Program, VarAddr};
 
 pub const ARG_REGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 
@@ -20,23 +20,23 @@ pub fn generate(prog: &Program) {
         }
     }
 
-    println!(".text");
-    for (gname, g) in &prog.globals {
-        match g {
-            Globals::Function(f) => {
-                if gname == "main" {
-                    println!(".globl main");
-                }
-                f.generate(gname);
-            }
-            Globals::Variable(var) => {
-                if let VarAddr::Global(g) = &var.addr {
-                    println!("{g}:");
-                    println!("  .zero {}", var.typ.size());
-                } else {
-                    panic!("Invalid Global Variable");
-                }
+    if !prog.global_vars.is_empty() {
+        println!(".data");
+        for var in prog.global_vars.values() {
+            if let VarAddr::Global(g) = &var.addr {
+                println!("{g}:");
+                println!("  .zero {}", var.typ.size());
+            } else {
+                panic!("Invalid Global Variable");
             }
         }
+    }
+
+    println!(".text");
+    for (fname, f) in &prog.fns {
+        if fname == "main" {
+            println!(".globl main");
+        }
+        f.generate(fname);
     }
 }

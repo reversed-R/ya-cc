@@ -11,7 +11,8 @@ use crate::{
 
 pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
     let mut env = Env::new(&prog.globals)?;
-    let mut globals = HashMap::new();
+    let mut fns = HashMap::new();
+    let mut global_vars = HashMap::new();
 
     for g in &prog.globals {
         match g {
@@ -21,24 +22,25 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
             symbols::globals::Globals::FnDef(f) => {
                 env.begin_local(&f.args, &f.rtype);
 
-                globals.insert(f.name.clone(), Globals::Function(f.validate(&mut env)?));
+                fns.insert(f.name.clone(), f.validate(&mut env)?);
 
                 env.end_local();
             }
             symbols::globals::Globals::VarDec(v) => {
-                globals.insert(
+                global_vars.insert(
                     v.name.clone(),
-                    Globals::Variable(Variable {
+                    Variable {
                         typ: v.typ.clone(),
                         addr: VarAddr::Global(v.name.clone()),
-                    }),
+                    },
                 );
             }
         }
     }
 
     Ok(Program {
-        globals,
+        fns,
+        global_vars,
         string_literals: env.global.string_literals,
     })
 }
@@ -215,13 +217,8 @@ impl Type {
 #[derive(Debug)]
 pub struct Program {
     pub string_literals: HashMap<String, usize>,
-    pub globals: HashMap<String, Globals>,
-}
-
-#[derive(Debug)]
-pub enum Globals {
-    Function(Function),
-    Variable(Variable),
+    pub fns: HashMap<String, Function>,
+    pub global_vars: HashMap<String, Variable>,
 }
 
 pub trait StmtTypeValidate {
