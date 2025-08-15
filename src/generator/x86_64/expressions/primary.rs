@@ -1,7 +1,9 @@
+use std::ops::Deref;
+
 use crate::{
-    generator::x86_64::{globals::LocalGenerate, ARG_REGS},
+    generator::x86_64::{expressions::unary, globals::LocalGenerate, ARG_REGS},
     validator::{
-        expressions::{Literal, Primary},
+        expressions::{Exprs, Literal, Primary},
         Type, VarAddr,
     },
 };
@@ -74,6 +76,44 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
         }
         Primary::Expr(expr) => {
             expr.generate(env);
+        }
+    }
+}
+
+pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env) {
+    match prim {
+        Primary::Variable(var) => match &var.addr {
+            VarAddr::Local(offset) => {
+                println!("mov rax, rbp");
+                println!("sub rax, {offset}");
+                println!("push rax");
+            }
+            VarAddr::Global(label) => {
+                println!("lea rax, {label}[rip]");
+                println!("push rax");
+            }
+        },
+        Primary::Expr(expr) => {
+            match &expr.deref() {
+                Exprs::Primary(prim) => {
+                    generate_as_left(prim, env);
+                }
+                Exprs::Unary(unary) => {
+                    unary::generate_as_left(unary, env);
+                }
+                Exprs::Binary(bin) => {
+                    todo!();
+                }
+            }
+            // // BUG:
+            // expr.generate(env);
+        }
+        Primary::FnCall(f) => {
+            // TODO:
+            panic!("TODO");
+        }
+        _ => {
+            panic!("Invalid Left Value");
         }
     }
 }

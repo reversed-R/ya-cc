@@ -152,6 +152,7 @@ pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) 
             bin.right.generate(env);
 
             if let Exprs::Unary(left) = &*bin.left {
+                println!("# calling generate_as_left...");
                 generate_as_left(left, env);
 
                 println!("pop rdi");

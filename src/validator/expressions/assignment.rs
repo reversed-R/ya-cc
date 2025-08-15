@@ -1,7 +1,7 @@
 use crate::{
     parser::symbols::expressions::assignment,
     validator::{
-        expressions::{BinOperator, Binary, Exprs, Literal, Primary},
+        expressions::{BinOperator, Binary, Exprs, Literal, Primary, UnOperator},
         Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
@@ -15,11 +15,21 @@ impl From<&assignment::AssignOperator> for BinOperator {
 }
 
 fn is_numeric_zero(src: &Exprs) -> bool {
-    if let Exprs::Primary(Primary::Literal(Literal::Int(0))) = src {
-        true
-    } else {
-        false
-    }
+    matches!(src, Exprs::Primary(Primary::Literal(Literal::Int(0))))
+        || if let Exprs::Unary(unary) = src {
+            matches!(unary.op, UnOperator::Deref(0))
+                && matches!(
+                    *unary.expr,
+                    Exprs::Primary(Primary::Literal(Literal::Int(0)))
+                )
+        } else {
+            false
+        }
+        || if let Exprs::Primary(Primary::Expr(expr)) = src {
+            is_numeric_zero(expr)
+        } else {
+            false
+        }
 }
 
 impl ExprTypeValidate for assignment::AssignExpr {
@@ -37,7 +47,7 @@ impl ExprTypeValidate for assignment::AssignExpr {
 
             if typ.equals(&dst_typ) {
                 // nothing to do
-            } else if src_typ == Type::Primitive(PrimitiveType::Int)
+            } else if typ == Type::Primitive(PrimitiveType::Int)
                 && is_numeric_zero(&src)
                 && matches!(dst_typ, Type::PtrTo(_))
             {

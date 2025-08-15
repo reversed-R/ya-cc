@@ -1,9 +1,7 @@
 use crate::{
     parser::symbols::expressions::{self, arithmetic, assignment, equality, multiplication, postfix, primary, relational, unary},
     validator::{
-        expressions::{
-             Exprs, Primary ,
-        },
+        expressions::Exprs,
         Env, ExprTypeValidate, Type, TypeError,
     },
 };
@@ -19,7 +17,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                     typ = Type::PtrTo(atyp);
                 }
 
-                Ok((typ, Exprs::Primary(Primary::Expr(Box::new(prim)))))
+                Ok((typ, Exprs::Primary(prim)))
             }
             Self::Index(postfix, expr) => {
                 let u = unary::Unary {
@@ -111,7 +109,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                 
                 println!("# typ: {typ:?}");
 
-                Ok((typ, Exprs::Primary(Primary::Expr(Box::new(u)))))
+                Ok((typ, u))
             }
         }
     }

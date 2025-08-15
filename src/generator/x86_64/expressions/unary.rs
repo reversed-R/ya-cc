@@ -1,5 +1,7 @@
+use std::ops::Deref;
+
 use crate::{
-    generator::x86_64::globals::LocalGenerate,
+    generator::x86_64::{expressions::primary, globals::LocalGenerate},
     validator::{
         expressions::{Exprs, Primary, UnOperator, Unary},
         VarAddr,
@@ -27,6 +29,22 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
                         println!("lea rax, {label}[rip]");
                         println!("push rax");
                     }
+                }
+            } else if let Exprs::Primary(Primary::Expr(expr)) = &*unary.expr {
+                if let Exprs::Primary(Primary::Variable(var)) = expr.deref() {
+                    match &var.addr {
+                        VarAddr::Local(offset) => {
+                            println!("mov rax, rbp");
+                            println!("sub rax, {offset}");
+                            println!("push rax");
+                        }
+                        VarAddr::Global(label) => {
+                            println!("lea rax, {label}[rip]");
+                            println!("push rax");
+                        }
+                    }
+                } else {
+                    panic!("Expected Identifier");
                 }
             } else {
                 panic!("Expected Identifier");
@@ -57,31 +75,14 @@ pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globa
         }
         UnOperator::Deref(count) => {
             match &*unary.expr {
-                Exprs::Primary(prim) => match prim {
-                    Primary::Variable(var) => match &var.addr {
-                        VarAddr::Local(offset) => {
-                            println!("mov rax, rbp");
-                            println!("sub rax, {offset}");
-                            println!("push rax");
-                        }
-                        VarAddr::Global(label) => {
-                            println!("lea rax, {label}[rip]");
-                            println!("push rax");
-                        }
-                    },
-                    Primary::Expr(expr) => {
-                        expr.generate(env);
-                    }
-                    Primary::FnCall(f) => {
-                        // TODO:
-                        panic!("TODO");
-                    }
-                    _ => {
-                        panic!("Invalid Left Value");
-                    }
-                },
+                Exprs::Primary(prim) => {
+                    println!("# deref primary as left ----");
+
+                    primary::generate_as_left(prim, env);
+                }
                 Exprs::Unary(un) => {
-                    generate_as_left(&un, env);
+                    println!("# deref unary as left ----");
+                    generate_as_left(un, env);
                 }
                 Exprs::Binary(bin) => {
                     todo!();

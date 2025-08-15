@@ -1,44 +1,43 @@
 use crate::{
     parser::symbols::expressions::primary,
     validator::{
-        expressions::{Exprs, FnCall, Literal, Primary},
+        expressions::{FnCall, Literal, Primary},
         Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
     },
 };
 
-impl ExprTypeValidate for primary::Primary {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+impl primary::Primary {
+    pub fn validate(&self, env: &mut Env) -> Result<(Type, Primary), TypeError> {
         match self {
             Self::Literal(lit) => match lit {
                 primary::Literal::Int(i) => Ok((
                     Type::Primitive(PrimitiveType::Int),
-                    Exprs::Primary(Primary::Literal(Literal::Int(*i))), // Primary::Literal(Literal::Int(*i)),
+                    Primary::Literal(Literal::Int(*i)),
                 )),
                 primary::Literal::Float(f) => Ok((
                     // Type::Primitive(PrimitiveType::Float),
                     Type::Primitive(PrimitiveType::Int),
-                    Exprs::Primary(Primary::Literal(Literal::Float(*f))),
+                    Primary::Literal(Literal::Float(*f)),
                 )),
                 primary::Literal::Char(c) => Ok((
                     // Type::Primitive(PrimitiveType::Float),
                     Type::Primitive(PrimitiveType::Char),
-                    Exprs::Primary(Primary::Literal(Literal::Char(*c))),
+                    Primary::Literal(Literal::Char(*c)),
                 )),
                 primary::Literal::StringLiteral(s) => {
                     if let Some(id) = env.string_literals.get(s) {
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
-                            Exprs::Primary(Primary::Literal(Literal::String(*id))),
+                            Primary::Literal(Literal::String(*id)),
                         ))
                     } else {
                         let id = env.string_literals.values().len();
                         env.string_literals.insert(s.clone(), id);
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),
-                            Exprs::Primary(Primary::Literal(Literal::String(id))),
+                            Primary::Literal(Literal::String(id)),
                         ))
                     }
-                    // TODO:
                 }
             },
             Self::Identifier(id) => {
@@ -47,15 +46,12 @@ impl ExprTypeValidate for primary::Primary {
                     .get(id)
                     .ok_or(TypeError::VariableNotFound(id.clone()))?;
 
-                Ok((
-                    var.typ.clone(),
-                    Exprs::Primary(Primary::Variable(var.clone())),
-                ))
+                Ok((var.typ.clone(), Primary::Variable(var.clone())))
             }
             Self::Expr(expr) => {
                 let (typ, expr) = expr.validate(env)?;
 
-                Ok((typ, Exprs::Primary(Primary::Expr(Box::new(expr)))))
+                Ok((typ, Primary::Expr(Box::new(expr))))
             }
             Self::FnCall(fcalling) => {
                 env.fns
@@ -94,10 +90,10 @@ impl ExprTypeValidate for primary::Primary {
                 } else {
                     Ok((
                         fcallee.rtype.clone(),
-                        Exprs::Primary(Primary::FnCall(FnCall {
+                        Primary::FnCall(FnCall {
                             name: fcalling.name.clone(),
                             args,
-                        })),
+                        }),
                     ))
                 }
             }

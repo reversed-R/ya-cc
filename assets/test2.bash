@@ -2,8 +2,8 @@
 	cargo build 
 
 run_test() {
-	echo -e $2 > testers/$1.c && ../target/debug/parser-test-in-rust testers/$1.c > testers/$1.s
-	gcc testers/$1.s -o testers/$1.out -no-pie -Wno-unused-command-line-argument
+	echo -e $2 > testers/$1.c && ../target/debug/parser-test-in-rust testers/$1.c > testers/$1.s && \
+	gcc testers/$1.s -o testers/$1.out -no-pie -Wno-unused-command-line-argument && \
 	./testers/$1.out
 	res=$?
 	if [ $res -ne $3 ]; then { echo "got:" $res; echo "expected:" $3; echo -e "\033[31mFAIL\033[m, at test case" $1: $2; exit 1; }; else echo -e "\033[32mPASS\033[m"; fi
