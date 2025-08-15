@@ -1,7 +1,7 @@
 use crate::{
     parser::symbols::expressions::arithmetic,
     validator::{
-        expressions::{BinOperator, Binary, Exprs},
+        expressions::{BinOperator, Binary, Exprs, Literal, Primary},
         Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
     },
 };
@@ -37,6 +37,47 @@ impl BinOperator {
     }
 }
 
+fn get_left_and_right_if_one_is_ptr_and_the_other_is_int(
+    left: &Exprs,
+    left_typ: &Type,
+    right: &Exprs,
+    right_typ: &Type,
+) -> Option<(Exprs, Exprs)> {
+    if matches!(left_typ, Type::Primitive(PrimitiveType::Int)) {
+        if let Type::PtrTo(pointed) = right_typ {
+            Some((
+                right.clone(),
+                Exprs::Binary(Binary {
+                    op: BinOperator::Imul,
+                    left: Box::new(left.clone()),
+                    right: Box::new(Exprs::Primary(Primary::Literal(Literal::Int(
+                        pointed.size() as i64,
+                    )))),
+                }),
+            ))
+        } else {
+            None
+        }
+    } else if matches!(right_typ, Type::Primitive(PrimitiveType::Int)) {
+        if let Type::PtrTo(pointed) = left_typ {
+            Some((
+                left.clone(),
+                Exprs::Binary(Binary {
+                    op: BinOperator::Imul,
+                    left: Box::new(right.clone()),
+                    right: Box::new(Exprs::Primary(Primary::Literal(Literal::Int(
+                        pointed.size() as i64,
+                    )))),
+                }),
+            ))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::ArithmExpr {
     fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
         let (mut typ, left) = self.left.validate(env)?;
@@ -48,7 +89,14 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
         let mut expr = left;
 
         for r in &self.rights {
-            let (right_typ, right) = r.right.validate(env)?;
+            let (right_typ, mut right) = r.right.validate(env)?;
+
+            if let Some((l, r)) = get_left_and_right_if_one_is_ptr_and_the_other_is_int(
+                &expr, &typ, &right, &right_typ,
+            ) {
+                expr = l;
+                right = r;
+            }
 
             match typ.compare(&right_typ) {
                 TypeComarison::Equal => {

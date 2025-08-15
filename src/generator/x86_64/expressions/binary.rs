@@ -1,9 +1,6 @@
 use crate::{
     generator::x86_64::{expressions::unary, globals::LocalGenerate},
-    validator::{
-        expressions::{BinOperator, Binary, Exprs},
-        PrimitiveType, Type,
-    },
+    validator::expressions::{BinOperator, Binary, Exprs},
 };
 
 pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) {
@@ -32,10 +29,6 @@ pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) 
 
             println!("pop rdi");
             println!("pop rax");
-            println!(
-                "imul rdi, {}",
-                Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
-            );
             println!("add rax, rdi");
             println!("push rax");
         }
@@ -45,10 +38,6 @@ pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) 
 
             println!("pop rdi");
             println!("pop rax");
-            println!(
-                "imul rdi, {}",
-                Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
-            );
             println!("sub rax, rdi");
             println!("push rax");
         }
@@ -172,10 +161,6 @@ pub fn generate_as_left(bin: &Binary, env: &mut crate::generator::x86_64::global
 
             println!("pop rdi");
             println!("pop rax");
-            println!(
-                "imul rdi, {}",
-                Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
-            );
             println!("add rax, rdi");
             println!("push rax");
 
@@ -187,10 +172,6 @@ pub fn generate_as_left(bin: &Binary, env: &mut crate::generator::x86_64::global
 
             println!("pop rdi");
             println!("pop rax");
-            println!(
-                "imul rdi, {}",
-                Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
-            );
             println!("sub rax, rdi");
             println!("push rax");
 

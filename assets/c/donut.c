@@ -16,17 +16,6 @@ int a(int *c, int *s, int d, int t) {
   return 0;
 }
 
-int printxygon(int x, int y, int g, int o, int N) {
-  printf("x:%d,", x);
-  printf("y:%d,", y);
-  printf("g:%d,", g);
-  printf("o:%d,", o);
-  printf("N:%d,", N);
-  printf("%c", 10);
-
-  return 0;
-}
-
 int main3(int **vars, int *z, char *b) {
   int *ps;
   int *pq;
@@ -74,9 +63,6 @@ int main3(int **vars, int *z, char *b) {
           (m(m(l, *pr) - m(m(w, *pq), p), *pu) - m(m(w, *pr), p) - m(l, *pq) -
            m(m(e, *pv), p)) /
           *ps;
-      printf("j: %d,", j);
-      printf("f: %d,", f);
-      printxygon(x, y, g, o, N);
       if (y > 0) {
         if (g > z[o]) {
           if (22 > y) {

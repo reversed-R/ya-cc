@@ -9,7 +9,7 @@ pub mod unary;
 
 use crate::validator::{Env, ExprTypeValidate, Type, TypeError, Variable};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Primary {
     Literal(Literal),
     Variable(Variable),
@@ -17,13 +17,13 @@ pub enum Primary {
     Expr(Box<Exprs>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FnCall {
     pub name: String,
     pub args: Vec<Exprs>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Literal {
     Int(i64),
     Float(f64),
@@ -31,27 +31,27 @@ pub enum Literal {
     String(usize),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Exprs {
     Primary(Primary),
     Unary(Unary),
     Binary(Binary),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Unary {
     pub op: UnOperator,
     pub expr: Box<Exprs>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Binary {
     pub op: BinOperator,
     pub left: Box<Exprs>,
     pub right: Box<Exprs>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinOperator {
     Iadd,
     Isub,
@@ -69,7 +69,7 @@ pub enum BinOperator {
     Assign,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnOperator {
     Neg,
     Ref,
