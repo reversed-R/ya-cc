@@ -1,7 +1,11 @@
 use std::ops::Deref;
 
 use crate::{
-    generator::x86_64::{expressions::unary, globals::LocalGenerate, ARG_REGS},
+    generator::x86_64::{
+        expressions::{binary, unary},
+        globals::LocalGenerate,
+        ARG_REGS,
+    },
     validator::{
         expressions::{Exprs, Literal, Primary},
         Type, VarAddr,
@@ -80,34 +84,27 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
     }
 }
 
-pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env) {
+pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env) -> usize {
+    // 行ったderef演算子の数
     match prim {
         Primary::Variable(var) => match &var.addr {
             VarAddr::Local(offset) => {
                 println!("mov rax, rbp");
                 println!("sub rax, {offset}");
                 println!("push rax");
+                0
             }
             VarAddr::Global(label) => {
                 println!("lea rax, {label}[rip]");
                 println!("push rax");
+                0
             }
         },
-        Primary::Expr(expr) => {
-            match &expr.deref() {
-                Exprs::Primary(prim) => {
-                    generate_as_left(prim, env);
-                }
-                Exprs::Unary(unary) => {
-                    unary::generate_as_left(unary, env);
-                }
-                Exprs::Binary(bin) => {
-                    todo!();
-                }
-            }
-            // // BUG:
-            // expr.generate(env);
-        }
+        Primary::Expr(expr) => match &expr.deref() {
+            Exprs::Primary(prim) => generate_as_left(prim, env),
+            Exprs::Unary(unary) => unary::generate_as_left(unary, env),
+            Exprs::Binary(bin) => binary::generate_as_left(bin, env),
+        },
         Primary::FnCall(f) => {
             // TODO:
             panic!("TODO");

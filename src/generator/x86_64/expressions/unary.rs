@@ -1,7 +1,10 @@
 use std::ops::Deref;
 
 use crate::{
-    generator::x86_64::{expressions::primary, globals::LocalGenerate},
+    generator::x86_64::{
+        expressions::{binary, primary},
+        globals::LocalGenerate,
+    },
     validator::{
         expressions::{Exprs, Primary, UnOperator, Unary},
         VarAddr,
@@ -63,7 +66,7 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
     }
 }
 
-pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env) {
+pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env) -> usize {
     // 左辺値として生成
     println!("# unary as left ----");
     match unary.op {
@@ -74,28 +77,31 @@ pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globa
             panic!("Invalid Left Value");
         }
         UnOperator::Deref(count) => {
+            let derefed_count;
+
             match &*unary.expr {
                 Exprs::Primary(prim) => {
                     println!("# deref primary as left ----");
 
-                    primary::generate_as_left(prim, env);
+                    derefed_count = primary::generate_as_left(prim, env);
                 }
                 Exprs::Unary(un) => {
                     println!("# deref unary as left ----");
-                    generate_as_left(un, env);
+                    derefed_count = generate_as_left(un, env);
                 }
                 Exprs::Binary(bin) => {
-                    todo!();
-                    // generate_as_left(&bin, env);
+                    derefed_count = binary::generate_as_left(bin, env);
                 }
             }
 
             println!("pop rax");
 
-            for _ in 0..count {
+            for _ in derefed_count..count {
                 println!("mov rax, [rax]");
             }
             println!("push rax");
+
+            count
         }
     }
 }

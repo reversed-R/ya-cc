@@ -1,5 +1,5 @@
 use crate::{
-    generator::x86_64::{expressions::unary::generate_as_left, globals::LocalGenerate},
+    generator::x86_64::{expressions::unary, globals::LocalGenerate},
     validator::{
         expressions::{BinOperator, Binary, Exprs},
         PrimitiveType, Type,
@@ -153,13 +153,51 @@ pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) 
 
             if let Exprs::Unary(left) = &*bin.left {
                 println!("# calling generate_as_left...");
-                generate_as_left(left, env);
+                unary::generate_as_left(left, env);
 
                 println!("pop rdi");
                 println!("pop rax");
                 println!("mov [rdi], rax");
                 println!("push rax");
             }
+        }
+    }
+}
+
+pub fn generate_as_left(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) -> usize {
+    match bin.op {
+        BinOperator::Padd => {
+            bin.left.generate(env);
+            bin.right.generate(env);
+
+            println!("pop rdi");
+            println!("pop rax");
+            println!(
+                "imul rdi, {}",
+                Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
+            );
+            println!("add rax, rdi");
+            println!("push rax");
+
+            1
+        }
+        BinOperator::Psub => {
+            bin.left.generate(env);
+            bin.right.generate(env);
+
+            println!("pop rdi");
+            println!("pop rax");
+            println!(
+                "imul rdi, {}",
+                Type::PtrTo(Box::new(Type::Primitive(PrimitiveType::Int))).size()
+            );
+            println!("sub rax, rdi");
+            println!("push rax");
+
+            1
+        }
+        _ => {
+            panic!("Invalid Left Value");
         }
     }
 }
