@@ -5,7 +5,6 @@ use crate::{generator::x86_64::globals::LocalGenerate, validator::statements::St
 
 impl LocalGenerate for Stmt {
     fn generate(&self, env: &mut super::globals::Env) {
-        println!("#---- statement ----");
         match self {
             Self::Compound(stmts) => {
                 for stmt in stmts {
@@ -14,14 +13,10 @@ impl LocalGenerate for Stmt {
             }
             Self::Expr(expr) => {
                 expr.generate(env);
-
-                println!("pop rax");
             }
             Self::Return(expr) => {
-                println!("# return");
                 expr.generate(env);
 
-                println!("pop rax");
                 println!("mov rsp, rbp");
                 println!("pop rbp");
                 println!("ret");

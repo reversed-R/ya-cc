@@ -8,7 +8,6 @@ impl LocalGenerate for BranchStmt {
 
         self.cond.generate(env);
 
-        println!("pop rax");
         println!("cmp rax, 0");
 
         match &self.els {

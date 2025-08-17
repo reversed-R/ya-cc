@@ -16,9 +16,7 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
         UnOperator::Neg => {
             unary.expr.generate(env);
 
-            println!("pop rax");
             println!("neg rax");
-            println!("push rax");
         }
         UnOperator::Ref => {
             if let Exprs::Primary(Primary::Variable(var)) = &*unary.expr {
@@ -26,11 +24,9 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
                     VarAddr::Local(offset) => {
                         println!("mov rax, rbp");
                         println!("sub rax, {offset}");
-                        println!("push rax");
                     }
                     VarAddr::Global(label) => {
                         println!("lea rax, {label}[rip]");
-                        println!("push rax");
                     }
                 }
             } else if let Exprs::Primary(Primary::Expr(expr)) = &*unary.expr {
@@ -39,11 +35,9 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
                         VarAddr::Local(offset) => {
                             println!("mov rax, rbp");
                             println!("sub rax, {offset}");
-                            println!("push rax");
                         }
                         VarAddr::Global(label) => {
                             println!("lea rax, {label}[rip]");
-                            println!("push rax");
                         }
                     }
                 } else {
@@ -56,19 +50,15 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
         UnOperator::Deref(count) => {
             unary.expr.generate(env);
 
-            println!("pop rax");
-
             for _ in 0..count {
                 println!("mov rax, [rax]");
             }
-            println!("push rax");
         }
     }
 }
 
 pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env) -> usize {
     // 左辺値として生成
-    println!("# unary as left ----");
     match unary.op {
         UnOperator::Neg => {
             panic!("Invalid Left Value");
@@ -77,29 +67,15 @@ pub fn generate_as_left(unary: &Unary, env: &mut crate::generator::x86_64::globa
             panic!("Invalid Left Value");
         }
         UnOperator::Deref(count) => {
-            let derefed_count;
-
-            match &*unary.expr {
-                Exprs::Primary(prim) => {
-                    println!("# deref primary as left ----");
-
-                    derefed_count = primary::generate_as_left(prim, env);
-                }
-                Exprs::Unary(un) => {
-                    println!("# deref unary as left ----");
-                    derefed_count = generate_as_left(un, env);
-                }
-                Exprs::Binary(bin) => {
-                    derefed_count = binary::generate_as_left(bin, env);
-                }
-            }
-
-            println!("pop rax");
+            let derefed_count = match &*unary.expr {
+                Exprs::Primary(prim) => primary::generate_as_left(prim, env),
+                Exprs::Unary(un) => generate_as_left(un, env),
+                Exprs::Binary(bin) => binary::generate_as_left(bin, env),
+            };
 
             for _ in derefed_count..count {
                 println!("mov rax, [rax]");
             }
-            println!("push rax");
 
             count
         }

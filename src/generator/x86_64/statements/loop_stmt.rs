@@ -9,7 +9,6 @@ impl LocalGenerate for LoopStmt {
         println!(".L{}$begin{label_count}:", env.fname);
 
         self.cond.generate(env);
-        println!("pop rax");
         println!("cmp rax, 0");
         println!("je .L{}$end{label_count}", env.fname);
 

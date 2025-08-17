@@ -16,18 +16,16 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
     match prim {
         Primary::Literal(lit) => match lit {
             Literal::Int(i) => {
-                println!("push {i}");
+                println!("mov rax, {i}");
             }
             Literal::Char(c) => {
-                println!("push {c}");
+                println!("mov rax, {c}");
             }
             Literal::String(s) => {
                 println!("lea rax, .L{s}[rip]");
-                println!("push rax");
             }
             _ => {
-                // TODO:
-                panic!("TODO");
+                todo!();
             }
         },
         Primary::Variable(var) => match &var.addr {
@@ -35,13 +33,12 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
                 if let Type::Array(_, _) = &var.typ {
                     println!("mov rax, rbp");
                     println!("sub rax, {offset}");
-                    println!("push rax");
                 } else {
-                    println!("push [rbp - {offset}]");
+                    println!("mov rax, [rbp - {offset}]");
                 }
             }
             VarAddr::Global(label) => {
-                println!("push QWORD PTR {label}[rip]");
+                println!("mov rax, QWORD PTR {label}[rip]");
             }
         },
         Primary::FnCall(f) => {
@@ -49,6 +46,7 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
 
             for arg in f.args.iter().rev() {
                 arg.generate(env);
+                println!("push rax");
 
                 // NOTE: push calculated value to stack,
                 // because if pop to argument register as soon as calculate,
@@ -76,7 +74,6 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
             println!("mov al, 0");
             println!("call {}", f.name);
             println!(".L{}$fncall{id}$end:", env.fname);
-            println!("push rax");
         }
         Primary::Expr(expr) => {
             expr.generate(env);
@@ -91,12 +88,10 @@ pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::glob
             VarAddr::Local(offset) => {
                 println!("mov rax, rbp");
                 println!("sub rax, {offset}");
-                println!("push rax");
                 0
             }
             VarAddr::Global(label) => {
                 println!("lea rax, {label}[rip]");
-                println!("push rax");
                 0
             }
         },
@@ -106,8 +101,7 @@ pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::glob
             Exprs::Binary(bin) => binary::generate_as_left(bin, env),
         },
         Primary::FnCall(f) => {
-            // TODO:
-            panic!("TODO");
+            todo!();
         }
         _ => {
             panic!("Invalid Left Value");
