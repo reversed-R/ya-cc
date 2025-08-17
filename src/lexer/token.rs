@@ -1,5 +1,17 @@
 #[derive(Clone, Debug, PartialEq)]
-pub enum Token {
+pub struct Range {
+    pub begin: usize,
+    pub end: usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub range: Range,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TokenKind {
     String(String),        // string of remain characters
     IntLiteral(i64),       // int literal
     CharLiteral(u8),       // char literal
@@ -36,7 +48,7 @@ pub enum Token {
     SemiColon,             // ;
 }
 
-impl Token {
+impl TokenKind {
     pub fn pattern(&self) -> String {
         match self {
             Self::String(_) => "".to_string(),

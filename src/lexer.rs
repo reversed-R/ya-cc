@@ -2,6 +2,8 @@ pub mod token;
 
 use token::Token;
 
+use crate::lexer::token::{Range, TokenKind};
+
 #[derive(Debug)]
 pub enum TokenizeError {
     SingleQuoteCloseNotFound,
@@ -13,9 +15,9 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
 
     #[derive(Debug)]
     enum PreToken<'src> {
-        Raw(&'src str),
-        CharLiteral(u8),
-        StringLiteral(&'src str),
+        Raw(&'src str, usize, usize),
+        CharLiteral(u8, usize, usize),
+        StringLiteral(&'src str, usize, usize),
     }
 
     let mut i = 0;
@@ -23,7 +25,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
     while i < str.len() {
         if &str[i..i + 1] == "\'" {
             if i - raw_head > 0 {
-                pretokens.push(PreToken::Raw(&str[raw_head..i]));
+                pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head, i));
             }
             i += 1;
 
@@ -36,7 +38,8 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                     if iquote == i + 1 {
                         // ISSUE: more good code ...
                         let c: u8 = str[i..i + 1].as_bytes().first().unwrap().clone();
-                        pretokens.push(PreToken::CharLiteral(c));
+                        pretokens.push(PreToken::CharLiteral(c, i - 1, iquote + 1));
+                        // char literal range contains single quotes before and after the character
                         i = iquote + 1;
                         break;
                     } else {
@@ -48,7 +51,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
             }
         } else if &str[i..i + 1] == "\"" {
             if i - raw_head > 0 {
-                pretokens.push(PreToken::Raw(&str[raw_head..i]));
+                pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head, i));
             }
             i += 1;
 
@@ -58,7 +61,8 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                 // if backslach appear, start escape
                 if &str[iquote..iquote + 1] == "\"" {
                     raw_head = iquote + 1;
-                    pretokens.push(PreToken::StringLiteral(&str[i..iquote]));
+                    pretokens.push(PreToken::StringLiteral(&str[i..iquote], i - 1, iquote + 1));
+                    // stirng literal range contains single quotes before and after the string
                     i = iquote + 1;
                     break;
                 }
@@ -70,51 +74,81 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
         }
     }
     if i - raw_head > 0 {
-        pretokens.push(PreToken::Raw(&str[raw_head..i]));
+        pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head, i));
     }
 
     // delimiter operators
     // ISSUE: must sort longer by operator chars length
-    let delims: Vec<Token> = vec![
-        Token::LesEq,     // <=
-        Token::GrtEq,     // >=
-        Token::Equal,     // ==
-        Token::NotEq,     // !=
-        Token::LPare,     // (
-        Token::RPare,     // )
-        Token::LBrace,    // {
-        Token::RBrace,    // }
-        Token::LBracket,  // [
-        Token::RBracket,  // ]
-        Token::Plus,      // +
-        Token::Minus,     // -
-        Token::Asterisk,  // *
-        Token::Slash,     // /
-        Token::Percent,   // %
-        Token::Ampersand, // &
-        Token::Lesser,    // <
-        Token::Greater,   // >
-        Token::Assign,    // =
-        Token::Comma,     // ,
-        Token::Colon,     // :
-        Token::SemiColon, // ;
+    let delims: Vec<TokenKind> = vec![
+        TokenKind::LesEq,     // <=
+        TokenKind::GrtEq,     // >=
+        TokenKind::Equal,     // ==
+        TokenKind::NotEq,     // !=
+        TokenKind::LPare,     // (
+        TokenKind::RPare,     // )
+        TokenKind::LBrace,    // {
+        TokenKind::RBrace,    // }
+        TokenKind::LBracket,  // [
+        TokenKind::RBracket,  // ]
+        TokenKind::Plus,      // +
+        TokenKind::Minus,     // -
+        TokenKind::Asterisk,  // *
+        TokenKind::Slash,     // /
+        TokenKind::Percent,   // %
+        TokenKind::Ampersand, // &
+        TokenKind::Lesser,    // <
+        TokenKind::Greater,   // >
+        TokenKind::Assign,    // =
+        TokenKind::Comma,     // ,
+        TokenKind::Colon,     // :
+        TokenKind::SemiColon, // ;
     ];
 
     let mut token_vecs: Vec<Vec<Token>> = vec![];
     for pretoken in &pretokens {
         match pretoken {
-            PreToken::CharLiteral(c) => {
-                token_vecs.push(vec![Token::CharLiteral(*c)]);
+            PreToken::CharLiteral(c, begin, end) => {
+                token_vecs.push(vec![Token {
+                    kind: TokenKind::CharLiteral(*c),
+                    range: Range {
+                        begin: *begin,
+                        end: *end,
+                    },
+                }]);
             }
-            PreToken::StringLiteral(s) => {
-                token_vecs.push(vec![Token::StringLiteral(s.to_string())]);
+            PreToken::StringLiteral(s, begin, end) => {
+                token_vecs.push(vec![Token {
+                    kind: TokenKind::StringLiteral(s.to_string()),
+                    range: Range {
+                        begin: *begin,
+                        end: *end,
+                    },
+                }]);
             }
-            PreToken::Raw(r) => {
-                let words: Vec<&str> = r.split(&[' ', '\t', '\n'][..]).collect();
+            PreToken::Raw(r, offset, _) => {
+                let mut words: Vec<(&str, usize)> = vec![];
+                let mut begin = None;
+
+                for (i, c) in r.char_indices() {
+                    if c == ' ' || c == '\t' || c == '\n' {
+                        if let Some(bg) = begin {
+                            words.push((&r[bg..i], bg));
+                            begin = None;
+                        }
+                    } else if begin.is_none() {
+                        begin = Some(i);
+                    }
+                }
+
+                // the last token
+                if let Some(bg) = begin {
+                    words.push((&r[bg..], bg));
+                }
+
                 let mut tmp_tokens = vec![];
 
-                for w in words {
-                    tmp_tokens.append(&mut to_tokens(w, &delims));
+                for (w, begin) in words {
+                    tmp_tokens.append(&mut to_tokens(w, &delims, offset + begin));
                 }
 
                 token_vecs.push(tmp_tokens);
@@ -127,32 +161,56 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
         .into_iter()
         .flatten()
         .map(|t| {
-            match t {
-                Token::String(s) => {
+            match t.kind {
+                TokenKind::String(s) => {
                     // check literal expressions
-                    if let Some(t) = try_get_dec_int(&s) {
-                        t
-                    } else if let Some(t) = try_get_prefixed_int(&s) {
-                        t
+                    if let Some(ikind) = try_get_dec_int(&s) {
+                        Token {
+                            kind: ikind,
+                            range: Range {
+                                begin: t.range.begin,
+                                end: t.range.end,
+                            },
+                        }
+                    } else if let Some(ikind) = try_get_prefixed_int(&s) {
+                        Token {
+                            kind: ikind,
+                            range: Range {
+                                begin: t.range.begin,
+                                end: t.range.end,
+                            },
+                        }
                     } else {
                         let replacers = vec![
-                            Token::If,
-                            Token::Else,
-                            Token::While,
-                            Token::Return,
-                            Token::SizeOf,
-                            Token::Int,
-                            Token::Char,
-                            Token::Void,
+                            TokenKind::If,
+                            TokenKind::Else,
+                            TokenKind::While,
+                            TokenKind::Return,
+                            TokenKind::SizeOf,
+                            TokenKind::Int,
+                            TokenKind::Char,
+                            TokenKind::Void,
                         ];
 
                         for r in replacers {
                             if r.pattern() == s {
-                                return r.to_owned();
+                                return Token {
+                                    kind: r.to_owned(),
+                                    range: Range {
+                                        begin: t.range.begin,
+                                        end: t.range.end,
+                                    },
+                                };
                             }
                         }
 
-                        Token::String(s)
+                        Token {
+                            kind: TokenKind::String(s),
+                            range: Range {
+                                begin: t.range.begin,
+                                end: t.range.end,
+                            },
+                        }
                     }
                 }
                 _ => t,
@@ -163,7 +221,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
     Ok(tokens)
 }
 
-fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
+fn to_tokens(str: &str, delims: &Vec<TokenKind>, offset: usize) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
     let mut last_index = 0; // last index of char which is not pushed to tokens vector
 
@@ -173,9 +231,21 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
             if (|p: &str| {
                 if i + p.len() - 1 < str.len() && p == &str[i..i + p.len()] {
                     if i - last_index > 0 {
-                        tokens.push(Token::String(str[last_index..i].to_string()));
+                        tokens.push(Token {
+                            kind: TokenKind::String(str[last_index..i].to_string()),
+                            range: Range {
+                                begin: offset + last_index,
+                                end: offset + i,
+                            },
+                        });
                     }
-                    tokens.push(d.clone());
+                    tokens.push(Token {
+                        kind: d.clone(),
+                        range: Range {
+                            begin: offset + i,
+                            end: offset + i + d.pattern().len(),
+                        },
+                    });
 
                     last_index = i + p.len();
                     i = i + p.len() - 1;
@@ -194,21 +264,27 @@ fn to_tokens(str: &str, delims: &Vec<Token>) -> Vec<Token> {
     }
 
     if last_index < str.len() {
-        tokens.push(Token::String(str[last_index..].to_string()));
+        tokens.push(Token {
+            kind: TokenKind::String(str[last_index..].to_string()),
+            range: Range {
+                begin: offset + last_index,
+                end: offset + last_index + str.len(),
+            },
+        });
     }
 
     tokens
 }
 
-fn try_get_dec_int(str: &str) -> Option<Token> {
+fn try_get_dec_int(str: &str) -> Option<TokenKind> {
     if let Ok(dec) = usize::from_str_radix(str, 10) {
-        Some(Token::IntLiteral(dec as i64))
+        Some(TokenKind::IntLiteral(dec as i64))
     } else {
         None
     }
 }
 
-fn try_get_prefixed_int(str: &str) -> Option<Token> {
+fn try_get_prefixed_int(str: &str) -> Option<TokenKind> {
     if str.len() > 2 && str.starts_with('0') {
         let radix = match str.chars().nth(1).unwrap().to_ascii_lowercase() {
             'b' => 2,
@@ -219,7 +295,7 @@ fn try_get_prefixed_int(str: &str) -> Option<Token> {
 
         if radix != 0 {
             if let Ok(u) = usize::from_str_radix(&str[2..], radix) {
-                Some(Token::IntLiteral(u as i64))
+                Some(TokenKind::IntLiteral(u as i64))
             } else {
                 None
             }
