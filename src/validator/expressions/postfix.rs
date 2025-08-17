@@ -103,11 +103,9 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                     },
                 };
 
-                println!("#...");
 
                 let (typ, u) = u.validate(env)?;
                 
-                println!("# typ: {typ:?}");
 
                 Ok((typ, u))
             }
