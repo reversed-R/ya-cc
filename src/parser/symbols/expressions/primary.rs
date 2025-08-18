@@ -91,10 +91,10 @@ impl Parse for Primary {
                     }
                 }
                 _ => {
-                    return Err(ParseError::InvalidEOF(vec![
+                    Err(ParseError::InvalidEOF(vec![
                         TokenKind::String("".to_string()),
                         TokenKind::IntLiteral(0),
-                    ]));
+                    ]))
                 }
             }
         } else {

@@ -165,14 +165,12 @@ impl Type {
                 Self::PtrTo(other_pointed) => {
                     if pointed.equals(other_pointed) {
                         TypeComarison::Equal
+                    } else if pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
+                        TypeComarison::ImplicitlyConvertableFrom
+                    } else if other_pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
+                        TypeComarison::ImplicitlyConvertableTo
                     } else {
-                        if pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
-                            TypeComarison::ImplicitlyConvertableFrom
-                        } else if other_pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
-                            TypeComarison::ImplicitlyConvertableTo
-                        } else {
-                            pointed.compare(other_pointed) // WARN: is it true?
-                        }
+                        pointed.compare(other_pointed) // WARN: is it true?
                     }
                 }
                 Self::Array(atyp, _) => {

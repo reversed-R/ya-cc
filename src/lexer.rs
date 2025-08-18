@@ -37,7 +37,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                     raw_head = iquote + 1;
                     if iquote == i + 1 {
                         // ISSUE: more good code ...
-                        let c: u8 = str[i..i + 1].as_bytes().first().unwrap().clone();
+                        let c: u8 = *str[i..i + 1].as_bytes().first().unwrap();
                         pretokens.push(PreToken::CharLiteral(c, i - 1, iquote + 1));
                         // char literal range contains single quotes before and after the character
                         i = iquote + 1;
