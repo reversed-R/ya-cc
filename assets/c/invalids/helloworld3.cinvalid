@@ -1,0 +1,9 @@
+int printf(char *fmt);
+
+fff
+
+int main() {
+  printf("Hello, World!");
+
+  return 0;
+}

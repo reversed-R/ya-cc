@@ -35,12 +35,12 @@ fn main() {
                     }
                 }
                 Err(e) => {
-                    panic!("{e:#?}");
+                    e.panic_with_error_message(&contents);
                 }
             }
             // eprintln!("{:#?}", prog);
         }
     } else {
-        eprintln!("1 Argument Required: <file-path>")
+        panic!("1 Argument Required: <file-path>")
     }
 }
