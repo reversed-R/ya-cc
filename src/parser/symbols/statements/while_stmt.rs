@@ -1,6 +1,6 @@
 use crate::{
-    lexer::token::Token,
-    parser::{symbols::expressions::Expr, Parse, ParseError},
+    lexer::token::{Token, TokenKind},
+    parser::{matches, symbols::expressions::Expr, Parse, ParseError},
 };
 
 use super::Stmt;
@@ -17,26 +17,18 @@ impl Parse for WhileStmt {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Some(Token::While) = tokens.next() {
-            if let Some(Token::LPare) = tokens.next() {
-                if let Ok(cond) = Expr::consume(tokens) {
-                    if let Some(Token::RPare) = tokens.next() {
-                        if let Ok(stmt) = Stmt::consume(tokens) {
-                            Ok(Self { cond, stmt })
-                        } else {
-                            Err(ParseError::InvalidToken)
-                        }
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                } else {
-                    Err(ParseError::InvalidToken)
+        if let TokenKind::While = matches(tokens.next(), vec![TokenKind::While])? {
+            if let TokenKind::LPare = matches(tokens.next(), vec![TokenKind::LPare])? {
+                let cond = Expr::consume(tokens)?;
+
+                if let TokenKind::RPare = matches(tokens.next(), vec![TokenKind::RPare])? {
+                    let stmt = Stmt::consume(tokens)?;
+
+                    return Ok(Self { cond, stmt });
                 }
-            } else {
-                Err(ParseError::InvalidToken)
             }
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Err(ParseError::Unknown)
     }
 }

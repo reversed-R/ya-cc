@@ -1,5 +1,5 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{Parse, ParseError},
 };
 
@@ -24,53 +24,41 @@ pub enum EqualityOperator {
     NotEq, // !=
 }
 
-impl EqualityExpr {
-    pub fn new(relat: RelationalExpr) -> Self {
-        Self {
-            left: relat,
-            rights: vec![],
-        }
-    }
-
-    fn push(&mut self, op: EqualityOperator, right: RelationalExpr) {
-        self.rights.push(EqualityExprNode { op, right });
-    }
-}
-
 impl Parse for EqualityExpr {
     type SelfType = Self;
 
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        let mut equal: Self;
+        let left = RelationalExpr::consume(tokens)?;
+        let mut rights = vec![];
 
-        if let Ok(relat) = RelationalExpr::consume(tokens) {
-            equal = Self::new(relat);
+        while let Some(t) = tokens.peek() {
+            match t.kind {
+                TokenKind::Equal => {
+                    tokens.next();
 
-            while let Some(t) = tokens.peek() {
-                match t {
-                    Token::Equal => {
-                        tokens.next();
-                        if let Ok(right) = RelationalExpr::consume(tokens) {
-                            equal.push(EqualityOperator::Equal, right);
-                        }
-                    }
-                    Token::NotEq => {
-                        tokens.next();
-                        if let Ok(right) = RelationalExpr::consume(tokens) {
-                            equal.push(EqualityOperator::NotEq, right);
-                        }
-                    }
-                    _ => {
-                        return Ok(equal);
-                    }
+                    let right = RelationalExpr::consume(tokens)?;
+                    rights.push(EqualityExprNode {
+                        op: EqualityOperator::Equal,
+                        right,
+                    });
+                }
+                TokenKind::NotEq => {
+                    tokens.next();
+
+                    let right = RelationalExpr::consume(tokens)?;
+                    rights.push(EqualityExprNode {
+                        op: EqualityOperator::NotEq,
+                        right,
+                    });
+                }
+                _ => {
+                    return Ok(Self { left, rights });
                 }
             }
-
-            Ok(equal)
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Ok(Self { left, rights })
     }
 }

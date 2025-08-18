@@ -1,6 +1,6 @@
 use crate::{
-    lexer::token::Token,
-    parser::{symbols::expressions::Expr, Parse, ParseError},
+    lexer::token::{Token, TokenKind},
+    parser::{matches, symbols::expressions::Expr, Parse, ParseError},
 };
 
 #[derive(Debug)]
@@ -14,15 +14,12 @@ impl Parse for ExprStmt {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Ok(expr) = Expr::consume(tokens) {
-            if let Some(Token::SemiColon) = tokens.peek() {
-                tokens.next();
-                Ok(Self { expr })
-            } else {
-                Err(ParseError::InvalidToken)
-            }
+        let expr = Expr::consume(tokens)?;
+
+        if let TokenKind::SemiColon = matches(tokens.next(), vec![TokenKind::SemiColon])? {
+            Ok(Self { expr })
         } else {
-            Err(ParseError::InvalidToken)
+            Err(ParseError::Unknown)
         }
     }
 }

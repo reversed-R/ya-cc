@@ -23,10 +23,8 @@ impl Parse for Expr {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Ok(assign) = AssignExpr::consume(tokens) {
-            Ok(Self(assign))
-        } else {
-            Err(ParseError::InvalidToken)
-        }
+        let assign = AssignExpr::consume(tokens)?;
+
+        Ok(Self(assign))
     }
 }

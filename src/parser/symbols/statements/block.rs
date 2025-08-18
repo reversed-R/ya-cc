@@ -1,6 +1,6 @@
 use crate::{
-    lexer::token::Token,
-    parser::{Parse, ParseError},
+    lexer::token::{Token, TokenKind},
+    parser::{matches, Parse, ParseError},
 };
 
 use super::Stmt;
@@ -16,23 +16,25 @@ impl Parse for BlockStmt {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Some(Token::LBrace) = tokens.next() {
+        if let TokenKind::LBrace = matches(tokens.next(), vec![TokenKind::LBrace])? {
             let mut stmts: Vec<Stmt> = vec![];
 
-            while let Some(t) = tokens.peek() {
-                if let Token::RBrace = t {
-                    tokens.next();
-                    return Ok(Self { stmts });
-                } else if let Ok(stmt) = Stmt::consume(tokens) {
-                    stmts.push(stmt);
+            loop {
+                if let Some(t) = tokens.peek() {
+                    if let TokenKind::RBrace = t.kind {
+                        tokens.next();
+                        return Ok(Self { stmts });
+                    }
                 } else {
-                    return Err(ParseError::InvalidToken);
+                    return Err(ParseError::InvalidEOF(vec![TokenKind::RBrace]));
                 }
-            }
 
-            Err(ParseError::InvalidToken)
-        } else {
-            Err(ParseError::InvalidToken)
+                let stmt = Stmt::consume(tokens)?;
+
+                stmts.push(stmt);
+            }
         }
+
+        Err(ParseError::Unknown)
     }
 }

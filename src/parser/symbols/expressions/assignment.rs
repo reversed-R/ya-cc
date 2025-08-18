@@ -1,5 +1,5 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{symbols::expressions::unary::Unary, Parse, ParseError},
 };
 
@@ -35,8 +35,8 @@ impl Parse for AssignExpr {
 
         while let Ok(unary) = Unary::consume(tokens) {
             if let Some(t) = tokens.peek() {
-                match t {
-                    Token::Assign => {
+                match t.kind {
+                    TokenKind::Assign => {
                         tokens.next();
 
                         lefts.push(AssignExprNode {
@@ -55,10 +55,8 @@ impl Parse for AssignExpr {
 
         *tokens = last_tokens;
 
-        if let Ok(right) = EqualityExpr::consume(tokens) {
-            Ok(Self { lefts, right })
-        } else {
-            Err(ParseError::InvalidToken)
-        }
+        let right = EqualityExpr::consume(tokens)?;
+
+        Ok(Self { lefts, right })
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
-    lexer::token::Token,
-    parser::{Parse, ParseError},
+    lexer::token::{Token, TokenKind},
+    parser::{matches, Parse, ParseError},
 };
 
 use super::Expr;
@@ -35,65 +35,73 @@ impl Parse for Primary {
     ) -> Result<Self::SelfType, ParseError> {
         // Primary = Literal | "(" Expr ")"
         if let Some(t) = tokens.next() {
-            match t {
-                Token::IntLiteral(i) => Ok(Self::Literal(Literal::Int(*i))),
-                Token::CharLiteral(c) => Ok(Self::Literal(Literal::Char(*c))),
-                Token::StringLiteral(s) => Ok(Self::Literal(Literal::StringLiteral(s.clone()))),
-                Token::String(s) => {
-                    if let Some(Token::LPare) = tokens.peek() {
-                        tokens.next();
+            match &t.kind {
+                TokenKind::IntLiteral(i) => Ok(Self::Literal(Literal::Int(*i))),
+                TokenKind::CharLiteral(c) => Ok(Self::Literal(Literal::Char(*c))),
+                TokenKind::StringLiteral(s) => Ok(Self::Literal(Literal::StringLiteral(s.clone()))),
+                TokenKind::String(s) => {
+                    if let Some(t) = tokens.peek() {
+                        if let TokenKind::LPare = t.kind {
+                            tokens.next();
 
-                        let mut args: Vec<Expr> = vec![];
+                            let mut args: Vec<Expr> = vec![];
 
-                        while let Some(t) = tokens.peek() {
-                            if let Token::RPare = t {
-                                tokens.next();
-                                return Ok(Self::FnCall(FnCall {
-                                    name: s.clone(),
-                                    args,
-                                }));
-                            } else if let Ok(expr) = Expr::consume(tokens) {
-                                args.push(expr);
-                                if let Some(t) = tokens.peek() {
-                                    match t {
-                                        Token::Comma => {
-                                            tokens.next();
-                                        }
-                                        Token::RPare => {
-                                            continue;
-                                        }
-                                        _ => {
-                                            return Err(ParseError::InvalidToken);
-                                        }
-                                    }
+                            while let Some(t) = tokens.peek() {
+                                if let TokenKind::RPare = t.kind {
+                                    tokens.next();
+                                    return Ok(Self::FnCall(FnCall {
+                                        name: s.clone(),
+                                        args,
+                                    }));
                                 } else {
-                                    return Err(ParseError::InvalidToken);
-                                }
-                            } else {
-                                return Err(ParseError::InvalidToken);
-                            }
-                        }
+                                    let expr = Expr::consume(tokens)?;
+                                    args.push(expr);
 
-                        Err(ParseError::InvalidToken)
+                                    let kind = matches(
+                                        tokens.peek().copied(),
+                                        vec![TokenKind::RPare, TokenKind::Comma],
+                                    )?;
+                                    if let TokenKind::Comma = kind {
+                                        tokens.next();
+                                        continue;
+                                    } else if let TokenKind::RPare = kind {
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            Err(ParseError::InvalidEOF(vec![TokenKind::RPare]))
+                        } else {
+                            Ok(Self::Identifier(s.clone()))
+                        }
                     } else {
                         Ok(Self::Identifier(s.clone()))
                     }
                 }
-                Token::LPare => {
-                    if let Ok(expr) = Expr::consume(tokens) {
-                        if let Some(Token::RPare) = tokens.next() {
-                            Ok(Self::Expr(Box::new(expr)))
-                        } else {
-                            Err(ParseError::InvalidToken)
-                        }
+                TokenKind::LPare => {
+                    let expr = Expr::consume(tokens)?;
+
+                    if let TokenKind::RPare = matches(tokens.next(), vec![TokenKind::RPare])? {
+                        Ok(Self::Expr(Box::new(expr)))
                     } else {
-                        Err(ParseError::InvalidToken)
+                        Err(ParseError::InvalidToken(
+                            vec![TokenKind::String("".to_string()), TokenKind::IntLiteral(0)],
+                            tokens.peek().unwrap().clone().clone(),
+                        ))
                     }
                 }
-                _ => Err(ParseError::InvalidToken),
+                _ => {
+                    return Err(ParseError::InvalidEOF(vec![
+                        TokenKind::String("".to_string()),
+                        TokenKind::IntLiteral(0),
+                    ]));
+                }
             }
         } else {
-            Err(ParseError::InvalidToken)
+            Err(ParseError::InvalidEOF(vec![
+                TokenKind::String("".to_string()),
+                TokenKind::IntLiteral(0),
+            ]))
         }
     }
 }

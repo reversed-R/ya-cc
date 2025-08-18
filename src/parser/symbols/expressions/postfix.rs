@@ -1,6 +1,7 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{
+        matches,
         symbols::expressions::{primary::Primary, Expr},
         Parse, ParseError,
     },
@@ -17,32 +18,29 @@ impl Parse for PostfixExpr {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Ok(prim) = Primary::consume(tokens) {
-            if let Some(t) = tokens.peek() {
-                match t {
-                    Token::LBracket => {
-                        tokens.next();
+        let prim = Primary::consume(tokens)?;
 
-                        if let Ok(expr) = Expr::consume(tokens) {
-                            if let Some(Token::RBracket) = tokens.next() {
-                                Ok(Self::Index(
-                                    Box::new(PostfixExpr::Primary(prim)),
-                                    Box::new(expr),
-                                ))
-                            } else {
-                                Err(ParseError::InvalidToken)
-                            }
-                        } else {
-                            Err(ParseError::InvalidToken)
-                        }
+        if let Some(t) = tokens.peek() {
+            match t.kind {
+                TokenKind::LBracket => {
+                    tokens.next();
+
+                    let expr = Expr::consume(tokens)?;
+
+                    if let TokenKind::RBracket = matches(tokens.next(), vec![TokenKind::RBracket])?
+                    {
+                        Ok(Self::Index(
+                            Box::new(PostfixExpr::Primary(prim)),
+                            Box::new(expr),
+                        ))
+                    } else {
+                        Err(ParseError::Unknown)
                     }
-                    _ => Ok(Self::Primary(prim)),
                 }
-            } else {
-                Err(ParseError::InvalidToken)
+                _ => Ok(Self::Primary(prim)),
             }
         } else {
-            Err(ParseError::InvalidToken)
+            Ok(Self::Primary(prim))
         }
     }
 }

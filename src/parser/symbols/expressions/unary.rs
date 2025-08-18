@@ -1,5 +1,5 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{symbols::expressions::postfix::PostfixExpr, Parse, ParseError},
 };
 
@@ -37,53 +37,52 @@ impl Parse for Unary {
     ) -> Result<Self::SelfType, ParseError> {
         // Unary = ("sizeof" | +" | "-")? RefUnary
         if let Some(t) = tokens.peek() {
-            match t {
-                Token::SizeOf => {
+            match t.kind {
+                TokenKind::SizeOf => {
                     tokens.next();
-                    if let Ok(right) = RefUnary::consume(tokens) {
-                        Ok(Self {
-                            op: UnaryOperator::SizeOf,
-                            right,
-                        })
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
+
+                    let right = RefUnary::consume(tokens)?;
+                    Ok(Self {
+                        op: UnaryOperator::SizeOf,
+                        right,
+                    })
                 }
-                Token::Plus => {
+                TokenKind::Plus => {
                     tokens.next();
-                    if let Ok(right) = RefUnary::consume(tokens) {
-                        Ok(Self {
-                            op: UnaryOperator::Plus,
-                            right,
-                        })
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
+
+                    let right = RefUnary::consume(tokens)?;
+                    Ok(Self {
+                        op: UnaryOperator::Plus,
+                        right,
+                    })
                 }
-                Token::Minus => {
+                TokenKind::Minus => {
                     tokens.next();
-                    if let Ok(right) = RefUnary::consume(tokens) {
-                        Ok(Self {
-                            op: UnaryOperator::Minus,
-                            right,
-                        })
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
+
+                    let right = RefUnary::consume(tokens)?;
+                    Ok(Self {
+                        op: UnaryOperator::Minus,
+                        right,
+                    })
                 }
                 _ => {
-                    if let Ok(right) = RefUnary::consume(tokens) {
-                        Ok(Self {
-                            op: UnaryOperator::Plus,
-                            right,
-                        })
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
+                    let right = RefUnary::consume(tokens)?;
+                    Ok(Self {
+                        op: UnaryOperator::Plus,
+                        right,
+                    })
                 }
             }
         } else {
-            Err(ParseError::InvalidToken)
+            Err(ParseError::InvalidEOF(vec![
+                TokenKind::String("".to_string()),
+                TokenKind::IntLiteral(0),
+                TokenKind::Plus,
+                TokenKind::Minus,
+                TokenKind::Ampersand,
+                TokenKind::Asterisk,
+                TokenKind::SizeOf,
+            ]))
         }
     }
 }
@@ -97,13 +96,13 @@ impl Parse for RefUnary {
 
         // RefUnary = ("&" | "*")* PostfixExpr
         while let Some(t) = tokens.peek() {
-            match t {
-                Token::Ampersand => {
+            match t.kind {
+                TokenKind::Ampersand => {
                     tokens.next();
 
                     ops.push(RefUnaryOperator::Ref);
                 }
-                Token::Asterisk => {
+                TokenKind::Asterisk => {
                     tokens.next();
 
                     ops.push(RefUnaryOperator::Deref);
@@ -114,10 +113,8 @@ impl Parse for RefUnary {
             }
         }
 
-        if let Ok(right) = PostfixExpr::consume(tokens) {
-            Ok(Self { ops, right })
-        } else {
-            Err(ParseError::InvalidToken)
-        }
+        let right = PostfixExpr::consume(tokens)?;
+
+        Ok(Self { ops, right })
     }
 }

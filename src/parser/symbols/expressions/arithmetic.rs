@@ -1,5 +1,5 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{Parse, ParseError},
 };
 
@@ -24,53 +24,41 @@ pub enum ArithmOperator {
     Sub, // -
 }
 
-impl ArithmExpr {
-    pub fn new(mul: MulExpr) -> Self {
-        Self {
-            left: mul,
-            rights: vec![],
-        }
-    }
-
-    fn push(&mut self, op: ArithmOperator, right: MulExpr) {
-        self.rights.push(ArithmExprNode { op, right });
-    }
-}
-
 impl Parse for ArithmExpr {
     type SelfType = Self;
 
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        let mut arithm: Self;
+        let left = MulExpr::consume(tokens)?;
+        let mut rights = vec![];
 
-        if let Ok(mul) = MulExpr::consume(tokens) {
-            arithm = Self::new(mul);
+        while let Some(t) = tokens.peek() {
+            match t.kind {
+                TokenKind::Plus => {
+                    tokens.next();
 
-            while let Some(t) = tokens.peek() {
-                match t {
-                    Token::Plus => {
-                        tokens.next();
-                        if let Ok(right) = MulExpr::consume(tokens) {
-                            arithm.push(ArithmOperator::Add, right);
-                        }
-                    }
-                    Token::Minus => {
-                        tokens.next();
-                        if let Ok(right) = MulExpr::consume(tokens) {
-                            arithm.push(ArithmOperator::Sub, right);
-                        }
-                    }
-                    _ => {
-                        return Ok(arithm);
-                    }
+                    let right = MulExpr::consume(tokens)?;
+                    rights.push(ArithmExprNode {
+                        op: ArithmOperator::Add,
+                        right,
+                    });
+                }
+                TokenKind::Minus => {
+                    tokens.next();
+
+                    let right = MulExpr::consume(tokens)?;
+                    rights.push(ArithmExprNode {
+                        op: ArithmOperator::Sub,
+                        right,
+                    });
+                }
+                _ => {
+                    return Ok(Self { left, rights });
                 }
             }
-
-            Ok(arithm)
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Ok(Self { left, rights })
     }
 }

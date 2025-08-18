@@ -1,5 +1,5 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{Parse, ParseError},
 };
 
@@ -26,65 +26,59 @@ pub enum RelationalOperator {
     GrtEq,   // >=
 }
 
-impl RelationalExpr {
-    pub fn new(arithm: ArithmExpr) -> Self {
-        Self {
-            left: arithm,
-            rights: vec![],
-        }
-    }
-
-    fn push(&mut self, op: RelationalOperator, right: ArithmExpr) {
-        self.rights.push(RelationalExprNode { op, right });
-    }
-}
-
 impl Parse for RelationalExpr {
     type SelfType = Self;
 
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        let mut relat: Self;
+        let left = ArithmExpr::consume(tokens)?;
+        let mut rights = vec![];
 
-        if let Ok(arithm) = ArithmExpr::consume(tokens) {
-            relat = Self::new(arithm);
+        while let Some(t) = tokens.peek() {
+            match t.kind {
+                TokenKind::Lesser => {
+                    tokens.next();
 
-            while let Some(t) = tokens.peek() {
-                match t {
-                    Token::Lesser => {
-                        tokens.next();
-                        if let Ok(right) = ArithmExpr::consume(tokens) {
-                            relat.push(RelationalOperator::Lesser, right);
-                        }
-                    }
-                    Token::Greater => {
-                        tokens.next();
-                        if let Ok(right) = ArithmExpr::consume(tokens) {
-                            relat.push(RelationalOperator::Greater, right);
-                        }
-                    }
-                    Token::LesEq => {
-                        tokens.next();
-                        if let Ok(right) = ArithmExpr::consume(tokens) {
-                            relat.push(RelationalOperator::LesEq, right);
-                        }
-                    }
-                    Token::GrtEq => {
-                        tokens.next();
-                        if let Ok(right) = ArithmExpr::consume(tokens) {
-                            relat.push(RelationalOperator::GrtEq, right);
-                        }
-                    }
-                    _ => {
-                        return Ok(relat);
-                    }
+                    let right = ArithmExpr::consume(tokens)?;
+                    rights.push(RelationalExprNode {
+                        op: RelationalOperator::Lesser,
+                        right,
+                    });
+                }
+                TokenKind::Greater => {
+                    tokens.next();
+
+                    let right = ArithmExpr::consume(tokens)?;
+                    rights.push(RelationalExprNode {
+                        op: RelationalOperator::Greater,
+                        right,
+                    });
+                }
+                TokenKind::LesEq => {
+                    tokens.next();
+
+                    let right = ArithmExpr::consume(tokens)?;
+                    rights.push(RelationalExprNode {
+                        op: RelationalOperator::LesEq,
+                        right,
+                    });
+                }
+                TokenKind::GrtEq => {
+                    tokens.next();
+
+                    let right = ArithmExpr::consume(tokens)?;
+                    rights.push(RelationalExprNode {
+                        op: RelationalOperator::GrtEq,
+                        right,
+                    });
+                }
+                _ => {
+                    return Ok(Self { left, rights });
                 }
             }
-
-            Ok(relat)
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Ok(Self { left, rights })
     }
 }

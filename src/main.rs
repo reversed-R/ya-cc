@@ -22,18 +22,23 @@ fn main() {
             let tokens = lexer::tokenize(&contents).expect("Tokenize Error");
             // eprintln!("{:?}", tokens);
 
-            let prog = parser::parse(tokens).expect("Parse Error");
-            // eprintln!("{:#?}", prog);
-
-            match validator::validate(&prog) {
-                Ok(validated_prog) => {
-                    // eprintln!("{:#?}", validated_prog);
-                    generator::x86_64::generate(&validated_prog);
+            match parser::parse(tokens) {
+                Ok(prog) => {
+                    match validator::validate(&prog) {
+                        Ok(validated_prog) => {
+                            // eprintln!("{:#?}", validated_prog);
+                            generator::x86_64::generate(&validated_prog);
+                        }
+                        Err(e) => {
+                            panic!("{e:#?}");
+                        }
+                    }
                 }
                 Err(e) => {
                     panic!("{e:#?}");
                 }
             }
+            // eprintln!("{:#?}", prog);
         }
     } else {
         eprintln!("1 Argument Required: <file-path>")

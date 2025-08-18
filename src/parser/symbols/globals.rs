@@ -1,6 +1,7 @@
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{
+        matches,
         symbols::statements::var_dec::{consume_scalar_type, VarDec},
         Parse, ParseError,
     },
@@ -16,78 +17,77 @@ pub enum Globals {
     VarDec(VarDec),
 }
 
-impl Parse for Globals {
-    type SelfType = Self;
-
-    fn consume(
+impl Globals {
+    pub fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
-    ) -> Result<Self::SelfType, ParseError> {
+    ) -> Result<Option<Self>, ParseError> {
         let primitive: PrimitiveType;
 
         if let Some(t) = tokens.next() {
-            match t {
-                Token::Int => {
+            match t.kind {
+                TokenKind::Int => {
                     primitive = PrimitiveType::Int;
                 }
-                Token::Char => {
+                TokenKind::Char => {
                     primitive = PrimitiveType::Char;
                 }
-                Token::Void => {
+                TokenKind::Void => {
                     primitive = PrimitiveType::Void;
                 }
                 _ => {
-                    return Err(ParseError::InvalidToken);
+                    return Err(ParseError::InvalidToken(
+                        vec![TokenKind::Int, TokenKind::Char, TokenKind::Void],
+                        t.clone(),
+                    ));
                 }
             }
 
             let typ = consume_scalar_type(primitive, tokens);
 
-            if let Some(Token::String(name)) = tokens.next() {
-                if let Some(Token::LPare) = tokens.peek() {
-                    if let Ok(args) = ArgsDec::consume(tokens) {
-                        match tokens.peek() {
-                            Some(Token::SemiColon) => {
-                                tokens.next();
+            if let TokenKind::String(name) =
+                matches(tokens.next(), vec![TokenKind::String("".to_string())])?
+            {
+                let kind = matches(
+                    tokens.peek().copied(),
+                    vec![TokenKind::LPare, TokenKind::SemiColon],
+                )?;
 
-                                Ok(Self::FnDeclare(FnDeclare {
-                                    name: name.clone(),
-                                    args: args.args,
-                                    rtype: typ,
-                                }))
-                            }
-                            Some(Token::LBrace) => {
-                                if let Ok(block) = BlockStmt::consume(tokens) {
-                                    Ok(Self::FnDef(FnDef {
-                                        name: name.clone(),
-                                        args: args.args,
-                                        stmts: block.stmts,
-                                        rtype: typ,
-                                    }))
-                                } else {
-                                    Err(ParseError::InvalidToken)
-                                }
-                            }
-                            _ => Err(ParseError::InvalidToken),
-                        }
-                    } else {
-                        Err(ParseError::InvalidToken)
+                if let TokenKind::LPare = kind {
+                    let args = ArgsDec::consume(tokens)?;
+
+                    let kind = matches(
+                        tokens.peek().copied(),
+                        vec![TokenKind::SemiColon, TokenKind::LBrace],
+                    )?;
+
+                    if let TokenKind::SemiColon = kind {
+                        tokens.next();
+
+                        return Ok(Some(Self::FnDeclare(FnDeclare {
+                            name: name.clone(),
+                            args: args.args,
+                            rtype: typ,
+                        })));
+                    } else if let TokenKind::LBrace = kind {
+                        return Ok(Some(Self::FnDef(FnDef {
+                            name: name.clone(),
+                            args: args.args,
+                            stmts: BlockStmt::consume(tokens)?.stmts,
+                            rtype: typ,
+                        })));
                     }
-                } else if let Some(Token::SemiColon) = tokens.peek() {
+                } else if let TokenKind::SemiColon = kind {
                     tokens.next();
 
-                    Ok(Self::VarDec(VarDec {
+                    return Ok(Some(Self::VarDec(VarDec {
                         name: name.clone(),
                         typ,
-                    }))
-                } else {
-                    Err(ParseError::InvalidToken)
+                    })));
                 }
-            } else {
-                Err(ParseError::InvalidToken)
             }
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Ok(None)
     }
 }
 
@@ -117,64 +117,66 @@ impl Parse for ArgsDec {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Some(Token::LPare) = tokens.next() {
-            let mut args: Vec<VarDec> = vec![];
+        matches(tokens.next(), vec![TokenKind::LPare])?;
 
-            while let Some(t) = tokens.peek() {
-                if let Token::RPare = t {
-                    tokens.next();
-                    return Ok(Self { args });
-                } else {
-                    let primitive: PrimitiveType;
+        let mut args: Vec<VarDec> = vec![];
 
-                    match t {
-                        Token::Int => {
-                            tokens.next();
-                            primitive = PrimitiveType::Int;
-                        }
-                        Token::Char => {
-                            tokens.next();
-                            primitive = PrimitiveType::Char;
-                        }
-                        Token::Void => {
-                            tokens.next();
-                            primitive = PrimitiveType::Void;
-                        }
-                        _ => {
-                            return Err(ParseError::InvalidToken);
-                        }
+        loop {
+            let t = tokens.peek().ok_or(ParseError::InvalidEOF(vec![
+                TokenKind::RPare,
+                TokenKind::Int,
+                TokenKind::Char,
+                TokenKind::Void,
+            ]))?;
+
+            if let TokenKind::RPare = t.kind {
+                tokens.next();
+                return Ok(Self { args });
+            } else {
+                let primitive: PrimitiveType;
+
+                match t.kind {
+                    TokenKind::Int => {
+                        tokens.next();
+                        primitive = PrimitiveType::Int;
                     }
-
-                    let typ = consume_scalar_type(primitive, tokens);
-
-                    if let Some(Token::String(arg)) = tokens.next() {
-                        args.push(VarDec {
-                            typ,
-                            name: arg.clone(),
-                        });
+                    TokenKind::Char => {
+                        tokens.next();
+                        primitive = PrimitiveType::Char;
                     }
-
-                    if let Some(t) = tokens.peek() {
-                        match t {
-                            Token::Comma => {
-                                tokens.next();
-                            }
-                            Token::RPare => {
-                                continue;
-                            }
-                            _ => {
-                                return Err(ParseError::InvalidToken);
-                            }
-                        }
-                    } else {
-                        return Err(ParseError::InvalidToken);
+                    TokenKind::Void => {
+                        tokens.next();
+                        primitive = PrimitiveType::Void;
+                    }
+                    _ => {
+                        return Err(ParseError::InvalidToken(
+                            vec![TokenKind::Int, TokenKind::Char, TokenKind::Void],
+                            t.clone().clone(),
+                        ));
                     }
                 }
-            }
 
-            Err(ParseError::InvalidToken)
-        } else {
-            Err(ParseError::InvalidToken)
+                let typ = consume_scalar_type(primitive, tokens);
+
+                if let TokenKind::String(arg) =
+                    matches(tokens.next(), vec![TokenKind::String("".to_string())])?
+                {
+                    args.push(VarDec {
+                        typ,
+                        name: arg.clone(),
+                    });
+                }
+
+                let kind = matches(
+                    tokens.peek().copied(),
+                    vec![TokenKind::Comma, TokenKind::RPare],
+                )?;
+                if let TokenKind::Comma = kind {
+                    tokens.next();
+                } else if let TokenKind::RPare = kind {
+                    continue;
+                }
+            }
         }
     }
 }

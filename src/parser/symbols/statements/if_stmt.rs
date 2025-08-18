@@ -1,6 +1,6 @@
 use crate::{
-    lexer::token::Token,
-    parser::{symbols::expressions::Expr, Parse, ParseError},
+    lexer::token::{Token, TokenKind},
+    parser::{matches, symbols::expressions::Expr, Parse, ParseError},
 };
 
 use super::Stmt;
@@ -18,43 +18,42 @@ impl Parse for IfStmt {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        if let Some(Token::If) = tokens.next() {
-            if let Some(Token::LPare) = tokens.next() {
-                if let Ok(cond) = Expr::consume(tokens) {
-                    if let Some(Token::RPare) = tokens.next() {
-                        if let Ok(then) = Stmt::consume(tokens) {
-                            if let Some(Token::Else) = tokens.peek() {
-                                tokens.next();
-                                if let Ok(els) = Stmt::consume(tokens) {
-                                    Ok(Self {
-                                        cond,
-                                        then,
-                                        els: Some(els),
-                                    })
-                                } else {
-                                    Err(ParseError::InvalidToken)
-                                }
-                            } else {
-                                Ok(Self {
-                                    cond,
-                                    then,
-                                    els: None,
-                                })
-                            }
+        if let TokenKind::If = matches(tokens.next(), vec![TokenKind::If])? {
+            if let TokenKind::LPare = matches(tokens.next(), vec![TokenKind::LPare])? {
+                let cond = Expr::consume(tokens)?;
+
+                if let TokenKind::RPare = matches(tokens.next(), vec![TokenKind::RPare])? {
+                    let then = Stmt::consume(tokens)?;
+
+                    if let Some(t) = tokens.peek() {
+                        if let TokenKind::Else = t.kind {
+                            tokens.next();
+
+                            let els = Stmt::consume(tokens)?;
+
+                            return Ok(Self {
+                                cond,
+                                then,
+                                els: Some(els),
+                            });
                         } else {
-                            Err(ParseError::InvalidToken)
+                            return Ok(Self {
+                                cond,
+                                then,
+                                els: None,
+                            });
                         }
                     } else {
-                        Err(ParseError::InvalidToken)
+                        return Ok(Self {
+                            cond,
+                            then,
+                            els: None,
+                        });
                     }
-                } else {
-                    Err(ParseError::InvalidToken)
                 }
-            } else {
-                Err(ParseError::InvalidToken)
             }
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Err(ParseError::Unknown)
     }
 }

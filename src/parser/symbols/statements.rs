@@ -10,7 +10,7 @@ use if_stmt::IfStmt;
 use while_stmt::WhileStmt;
 
 use crate::{
-    lexer::token::Token,
+    lexer::token::{Token, TokenKind},
     parser::{symbols::statements::var_dec::VarDec, Parse, ParseError},
 };
 
@@ -33,61 +33,26 @@ impl Parse for Stmt {
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
         if let Some(t) = tokens.peek() {
-            match t {
-                Token::If => {
-                    if let Ok(if_stmt) = IfStmt::consume(tokens) {
-                        Ok(Self::If(Box::new(if_stmt)))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                }
-                Token::While => {
-                    if let Ok(while_stmt) = WhileStmt::consume(tokens) {
-                        Ok(Self::While(Box::new(while_stmt)))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                }
-                Token::Return => {
+            match t.kind {
+                TokenKind::If => Ok(Self::If(Box::new(IfStmt::consume(tokens)?))),
+                TokenKind::While => Ok(Self::While(Box::new(WhileStmt::consume(tokens)?))),
+                TokenKind::Return => {
                     tokens.next();
                     // same process as expr stmt
-                    if let Ok(expr) = ExprStmt::consume(tokens) {
-                        Ok(Self::Return(expr.expr))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
+                    Ok(Self::Return(ExprStmt::consume(tokens)?.expr))
                 }
-                Token::LBrace => {
-                    if let Ok(block) = BlockStmt::consume(tokens) {
-                        Ok(Self::Block(block.stmts))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                }
-                Token::Int => {
-                    if let Ok(vardec) = VarDec::consume(tokens) {
-                        Ok(Self::VarDec(vardec))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                }
-                Token::Char => {
-                    if let Ok(vardec) = VarDec::consume(tokens) {
-                        Ok(Self::VarDec(vardec))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                }
-                _ => {
-                    if let Ok(expr) = ExprStmt::consume(tokens) {
-                        Ok(Self::Expr(expr.expr))
-                    } else {
-                        Err(ParseError::InvalidToken)
-                    }
-                }
+                TokenKind::LBrace => Ok(Self::Block(BlockStmt::consume(tokens)?.stmts)),
+                TokenKind::Int => Ok(Self::VarDec(VarDec::consume(tokens)?)),
+                TokenKind::Char => Ok(Self::VarDec(VarDec::consume(tokens)?)),
+                _ => Ok(Self::Expr(ExprStmt::consume(tokens)?.expr)),
             }
         } else {
-            Err(ParseError::InvalidToken)
+            Err(ParseError::InvalidEOF(vec![
+                TokenKind::If,
+                TokenKind::While,
+                TokenKind::Return,
+                TokenKind::Int,
+            ]))
         }
     }
 }

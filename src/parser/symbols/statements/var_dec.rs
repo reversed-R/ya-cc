@@ -1,6 +1,6 @@
 use crate::{
-    lexer::token::Token,
-    parser::{Parse, ParseError},
+    lexer::token::{Token, TokenKind},
+    parser::{matches, Parse, ParseError},
     validator::{PrimitiveType, Type},
 };
 
@@ -19,54 +19,64 @@ impl Parse for VarDec {
         let primitive: PrimitiveType;
 
         if let Some(t) = tokens.next() {
-            match t {
-                Token::Int => {
+            match t.kind {
+                TokenKind::Int => {
                     primitive = PrimitiveType::Int;
                 }
-                Token::Char => {
+                TokenKind::Char => {
                     primitive = PrimitiveType::Char;
                 }
                 _ => {
-                    return Err(ParseError::InvalidToken);
+                    return Err(ParseError::InvalidToken(
+                        vec![TokenKind::Int, TokenKind::Char],
+                        t.clone(),
+                    ));
                 }
             }
 
             let typ = consume_scalar_type(primitive, tokens);
 
-            if let Some(Token::String(id)) = tokens.next() {
-                if let Some(Token::LBracket) = tokens.peek() {
+            if let TokenKind::String(id) =
+                matches(tokens.next(), vec![TokenKind::String("".to_string())])?
+            {
+                let kind = matches(
+                    tokens.peek().copied(),
+                    vec![TokenKind::LBracket, TokenKind::SemiColon],
+                )?;
+                if let TokenKind::LBracket = kind {
                     tokens.next();
 
-                    if let Some(Token::IntLiteral(i)) = tokens.next() {
-                        if let Some(Token::RBracket) = tokens.next() {
-                            if let Some(Token::SemiColon) = tokens.next() {
-                                Ok(Self {
-                                    typ: Type::Array(Box::new(typ), *i as usize),
+                    if let TokenKind::IntLiteral(i) =
+                        matches(tokens.next(), vec![TokenKind::IntLiteral(0)])?
+                    {
+                        if let TokenKind::RBracket =
+                            matches(tokens.next(), vec![TokenKind::RBracket])?
+                        {
+                            if let TokenKind::SemiColon =
+                                matches(tokens.next(), vec![TokenKind::SemiColon])?
+                            {
+                                return Ok(Self {
+                                    typ: Type::Array(Box::new(typ), i as usize),
                                     name: id.clone(),
-                                })
-                            } else {
-                                Err(ParseError::InvalidToken)
+                                });
                             }
-                        } else {
-                            Err(ParseError::InvalidToken)
                         }
-                    } else {
-                        Err(ParseError::InvalidToken)
                     }
-                } else if let Some(Token::SemiColon) = tokens.next() {
-                    Ok(Self {
+                } else if let TokenKind::SemiColon = kind {
+                    tokens.next();
+
+                    return Ok(Self {
                         typ,
                         name: id.clone(),
-                    })
-                } else {
-                    Err(ParseError::InvalidToken)
+                    });
                 }
-            } else {
-                Err(ParseError::InvalidToken)
             }
-        } else {
-            Err(ParseError::InvalidToken)
         }
+
+        Err(ParseError::InvalidEOF(vec![
+            TokenKind::Int,
+            TokenKind::Char,
+        ]))
     }
 }
 
@@ -87,7 +97,13 @@ pub fn consume_scalar_type(
 fn consume_ptr_dec(tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>) -> usize {
     let mut count = 0;
 
-    while let Some(Token::Asterisk) = tokens.peek() {
+    while matches!(
+        tokens.peek(),
+        Some(Token {
+            kind: TokenKind::Asterisk,
+            range: _
+        })
+    ) {
         count += 1;
         tokens.next();
     }
