@@ -190,6 +190,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                             TokenKind::Int,
                             TokenKind::Char,
                             TokenKind::Void,
+                            TokenKind::Struct,
                         ];
 
                         for r in replacers {

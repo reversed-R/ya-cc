@@ -7,31 +7,49 @@ use crate::{
 };
 
 impl BinOperator {
-    fn from(op: &arithmetic::ArithmOperator, typ: &Type) -> Self {
+    fn from(op: &arithmetic::ArithmOperator, typ: &Type) -> Result<Self, TypeError> {
         match op {
             arithmetic::ArithmOperator::Add => match typ {
                 Type::Primitive(prim) => match prim {
-                    PrimitiveType::Int => Self::Iadd,
-                    // PrimitiveType::Float => Self::Fadd,
-                    PrimitiveType::Char => Self::Iadd,
+                    PrimitiveType::Int => Ok(Self::Iadd),
+                    // PrimitiveType::Float => Ok(Self::Fadd),
+                    PrimitiveType::Char => Ok(Self::Iadd),
                     PrimitiveType::Void => {
                         panic!("Cannot add or sub void");
                     }
                 },
-                Type::PtrTo(_) => Self::Padd,
-                Type::Array(_, _) => Self::Padd, // WARN: is it true?
+                Type::PtrTo(_) => Ok(Self::Padd),
+                Type::Array(_, _) => Ok(Self::Padd), // WARN: is it true?
+                Type::Struct(s) => Err(TypeError::TypeAndOperatorNotSupported(
+                    s.name.clone(),
+                    "+".to_string(),
+                )),
+                Type::Incomplete(i) => Err(TypeError::TypeAndOperatorNotSupported(
+                    i.clone(),
+                    "+".to_string(),
+                )),
+                // WARN: if i implement enum, i fix it
             },
             arithmetic::ArithmOperator::Sub => match typ {
                 Type::Primitive(prim) => match prim {
-                    PrimitiveType::Int => Self::Isub,
-                    // PrimitiveType::Float => Self::Fsub,
-                    PrimitiveType::Char => Self::Isub,
+                    PrimitiveType::Int => Ok(Self::Isub),
+                    // PrimitiveType::Float => Ok(Self::Fsub),
+                    PrimitiveType::Char => Ok(Self::Isub),
                     PrimitiveType::Void => {
                         panic!("Cannot add or sub void");
                     }
                 },
-                Type::PtrTo(_) => Self::Psub,
-                Type::Array(_, _) => Self::Psub, // WARN: is it true?
+                Type::PtrTo(_) => Ok(Self::Psub),
+                Type::Array(_, _) => Ok(Self::Psub), // WARN: is it true?
+                Type::Struct(s) => Err(TypeError::TypeAndOperatorNotSupported(
+                    s.name.clone(),
+                    "-".to_string(),
+                )),
+                Type::Incomplete(i) => Err(TypeError::TypeAndOperatorNotSupported(
+                    i.clone(),
+                    "-".to_string(),
+                )),
+                // WARN: if i implement enum, i fix it
             },
         }
     }
@@ -101,7 +119,7 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
             match typ.compare(&right_typ) {
                 TypeComarison::Equal => {
                     expr = Exprs::Binary(Binary {
-                        op: BinOperator::from(&r.op, &typ),
+                        op: BinOperator::from(&r.op, &typ)?,
                         left: Box::new(expr),
                         right: Box::new(right),
                     });
@@ -110,14 +128,14 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
                     typ = right_typ;
 
                     expr = Exprs::Binary(Binary {
-                        op: BinOperator::from(&r.op, &typ),
+                        op: BinOperator::from(&r.op, &typ)?,
                         left: Box::new(expr),
                         right: Box::new(right),
                     });
                 }
                 TypeComarison::ImplicitlyConvertableFrom => {
                     expr = Exprs::Binary(Binary {
-                        op: BinOperator::from(&r.op, &typ),
+                        op: BinOperator::from(&r.op, &typ)?,
                         left: Box::new(expr),
                         right: Box::new(right),
                     });

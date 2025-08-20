@@ -7,16 +7,19 @@ use crate::{
 };
 
 impl BinOperator {
-    fn from_assignop(value: &assignment::AssignOperator, typ: &Type) -> Self {
+    fn from_assignop(value: &assignment::AssignOperator, typ: &Type) -> Result<Self, TypeError> {
         match value {
             assignment::AssignOperator::Assign => match typ {
                 Type::Primitive(p) => match p {
-                    PrimitiveType::Int => Self::IAssign,
-                    PrimitiveType::Char => Self::CAssign,
-                    PrimitiveType::Void => Self::IAssign, // WARN: is it true?
+                    PrimitiveType::Int => Ok(Self::IAssign),
+                    PrimitiveType::Char => Ok(Self::CAssign),
+                    PrimitiveType::Void => Ok(Self::IAssign), // WARN: is it true?
                 },
-                Type::PtrTo(_) => Self::PAssign,
-                Type::Array(_, _) => Self::PAssign, // WARN: is it true?
+                Type::PtrTo(_) => Ok(Self::PAssign),
+                Type::Array(_, _) => Ok(Self::PAssign), // WARN: is it true?
+                Type::Struct(s) => Err(TypeError::StructNotAssignable(s.name.clone())),
+                Type::Incomplete(i) => Err(TypeError::StructNotAssignable(i.clone())),
+                // WARN: if i implement enum, i fix it
             },
         }
     }
@@ -65,7 +68,7 @@ impl ExprTypeValidate for assignment::AssignExpr {
 
             if typ.equals(&dst_typ) {
                 // nothing to do
-            } else if typ == Type::Primitive(PrimitiveType::Int)
+            } else if matches!(typ, Type::Primitive(PrimitiveType::Int))
                 && is_numeric_zero(&src)
                 && matches!(dst_typ, Type::PtrTo(_))
             {
@@ -75,7 +78,7 @@ impl ExprTypeValidate for assignment::AssignExpr {
             }
 
             src = Exprs::Binary(Binary {
-                op: BinOperator::from_assignop(&left.op, &typ),
+                op: BinOperator::from_assignop(&left.op, &typ)?,
                 left: Box::new(dst),
                 right: Box::new(src),
             });

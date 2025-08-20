@@ -5,7 +5,7 @@ use crate::{
         symbols::statements::var_dec::{consume_scalar_type, VarDec},
         Parse, ParseError,
     },
-    validator::{PrimitiveType, Type},
+    validator::{PrimitiveType, StructType, Type},
 };
 
 use super::{statements::block::BlockStmt, Stmt};
@@ -15,34 +15,57 @@ pub enum Globals {
     FnDef(FnDef),
     FnDeclare(FnDeclare),
     VarDec(VarDec),
+    TypeDef(TypeDef),
 }
 
 impl Globals {
     pub fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Option<Self>, ParseError> {
-        let primitive: PrimitiveType;
+        let base: Type;
 
-        if let Some(t) = tokens.next() {
+        if let Some(t) = tokens.peek() {
             match t.kind {
                 TokenKind::Int => {
-                    primitive = PrimitiveType::Int;
+                    tokens.next();
+                    base = Type::Primitive(PrimitiveType::Int);
                 }
                 TokenKind::Char => {
-                    primitive = PrimitiveType::Char;
+                    tokens.next();
+                    base = Type::Primitive(PrimitiveType::Char);
                 }
                 TokenKind::Void => {
-                    primitive = PrimitiveType::Void;
+                    tokens.next();
+                    base = Type::Primitive(PrimitiveType::Void);
+                }
+                TokenKind::Struct => {
+                    let name = consume_struct_and_name(tokens)?;
+
+                    let t = tokens
+                        .peek()
+                        .ok_or(ParseError::InvalidEOF(vec![TokenKind::LBrace]))?;
+
+                    if let TokenKind::LBrace = t.kind {
+                        tokens.next();
+                        return Ok(Some(Self::TypeDef(TypeDef::Struct(consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appears(name, tokens)?))));
+                    } else {
+                        base = Type::Incomplete(name)
+                    }
                 }
                 _ => {
                     return Err(ParseError::InvalidToken(
-                        vec![TokenKind::Int, TokenKind::Char, TokenKind::Void],
-                        t.clone(),
+                        vec![
+                            TokenKind::Int,
+                            TokenKind::Char,
+                            TokenKind::Void,
+                            TokenKind::Struct,
+                        ],
+                        t.clone().clone(),
                     ));
                 }
             }
 
-            let typ = consume_scalar_type(primitive, tokens);
+            let typ = consume_scalar_type(base, tokens);
 
             if let TokenKind::Identifier(name) =
                 matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
@@ -107,6 +130,13 @@ pub struct FnDef {
 }
 
 #[derive(Debug)]
+pub enum TypeDef {
+    Struct(StructType),
+    // Enum(EnumType),
+    // Typedef(Box<Self>),
+}
+
+#[derive(Debug)]
 struct ArgsDec {
     pub args: Vec<VarDec>,
 }
@@ -133,20 +163,20 @@ impl Parse for ArgsDec {
                 tokens.next();
                 return Ok(Self { args });
             } else {
-                let primitive: PrimitiveType;
+                let base: Type;
 
                 match t.kind {
                     TokenKind::Int => {
                         tokens.next();
-                        primitive = PrimitiveType::Int;
+                        base = Type::Primitive(PrimitiveType::Int);
                     }
                     TokenKind::Char => {
                         tokens.next();
-                        primitive = PrimitiveType::Char;
+                        base = Type::Primitive(PrimitiveType::Char);
                     }
                     TokenKind::Void => {
                         tokens.next();
-                        primitive = PrimitiveType::Void;
+                        base = Type::Primitive(PrimitiveType::Void);
                     }
                     _ => {
                         return Err(ParseError::InvalidToken(
@@ -156,7 +186,7 @@ impl Parse for ArgsDec {
                     }
                 }
 
-                let typ = consume_scalar_type(primitive, tokens);
+                let typ = consume_scalar_type(base, tokens);
 
                 if let TokenKind::Identifier(arg) =
                     matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
@@ -176,6 +206,96 @@ impl Parse for ArgsDec {
                 } else if let TokenKind::RPare = kind {
                     continue;
                 }
+            }
+        }
+    }
+}
+
+pub fn consume_struct_and_name(
+    tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
+) -> Result<String, ParseError> {
+    let mut name = "".to_string();
+
+    if let TokenKind::Struct = matches(tokens.next(), vec![TokenKind::Struct])? {
+        if let TokenKind::Identifier(id) =
+            matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
+        {
+            name = id;
+        }
+    }
+
+    Ok(name)
+}
+
+fn consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appears(
+    name: String,
+    tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
+) -> Result<StructType, ParseError> {
+    let mut members = vec![];
+
+    loop {
+        let t = tokens.peek().ok_or(ParseError::InvalidEOF(vec![
+            TokenKind::RBrace,
+            TokenKind::Int,
+            TokenKind::Char,
+            TokenKind::Void,
+            TokenKind::Struct,
+        ]))?;
+
+        if let TokenKind::RBrace = t.kind {
+            tokens.next();
+
+            matches(tokens.next(), vec![TokenKind::SemiColon])?;
+
+            return Ok(StructType::new(name, &members));
+        } else {
+            let base: Type;
+
+            match t.kind {
+                TokenKind::Int => {
+                    tokens.next();
+                    base = Type::Primitive(PrimitiveType::Int);
+                }
+                TokenKind::Char => {
+                    tokens.next();
+                    base = Type::Primitive(PrimitiveType::Char);
+                }
+                TokenKind::Void => {
+                    tokens.next();
+                    base = Type::Primitive(PrimitiveType::Void);
+                }
+                TokenKind::Struct => {
+                    base = Type::Incomplete(consume_struct_and_name(tokens)?);
+                }
+                _ => {
+                    return Err(ParseError::InvalidToken(
+                        vec![
+                            TokenKind::Int,
+                            TokenKind::Char,
+                            TokenKind::Void,
+                            TokenKind::Struct,
+                        ],
+                        t.clone().clone(),
+                    ));
+                }
+            }
+
+            let typ = consume_scalar_type(base, tokens);
+
+            if let TokenKind::Identifier(id) =
+                matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
+            {
+                members.push((typ, id.clone()));
+            }
+
+            let kind = matches(
+                tokens.peek().copied(),
+                vec![TokenKind::SemiColon, TokenKind::RBrace],
+            )?;
+            if let TokenKind::SemiColon = kind {
+                tokens.next();
+            } else if let TokenKind::RBrace = kind {
+                continue;
             }
         }
     }

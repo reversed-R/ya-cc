@@ -4,7 +4,7 @@ use crate::{
     validator::{PrimitiveType, Type},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VarDec {
     pub typ: Type,
     pub name: String,
@@ -16,15 +16,15 @@ impl Parse for VarDec {
     fn consume(
         tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
     ) -> Result<Self::SelfType, ParseError> {
-        let primitive: PrimitiveType;
+        let base: Type;
 
         if let Some(t) = tokens.next() {
             match t.kind {
                 TokenKind::Int => {
-                    primitive = PrimitiveType::Int;
+                    base = Type::Primitive(PrimitiveType::Int);
                 }
                 TokenKind::Char => {
-                    primitive = PrimitiveType::Char;
+                    base = Type::Primitive(PrimitiveType::Char);
                 }
                 _ => {
                     return Err(ParseError::InvalidToken(
@@ -34,7 +34,7 @@ impl Parse for VarDec {
                 }
             }
 
-            let typ = consume_scalar_type(primitive, tokens);
+            let typ = consume_scalar_type(base, tokens);
 
             if let TokenKind::Identifier(id) =
                 matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
@@ -81,11 +81,11 @@ impl Parse for VarDec {
 }
 
 pub fn consume_scalar_type(
-    primitive: PrimitiveType,
+    base: Type,
     tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
 ) -> Type {
     let ptr_count = consume_ptr_dec(tokens);
-    let mut typ = Type::Primitive(primitive);
+    let mut typ = base;
 
     for _ in 0..ptr_count {
         typ = Type::PtrTo(Box::new(typ));

@@ -5,11 +5,18 @@ pub mod statements;
 use std::{collections::HashMap, ops::Deref};
 
 use crate::{
-    parser::symbols::{self, globals::FnDef, statements::var_dec::VarDec},
+    parser::symbols::{
+        self,
+        globals::{FnDef, TypeDef},
+        statements::var_dec::VarDec,
+    },
     validator::{expressions::Exprs, globals::Function},
 };
 
 pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
+    // ISSUE:
+    // 現在の実装ではEnvの初期化時にグローバルから見える変数、関数宣言、定義、型定義を総なめしている
+    // 実際のCでは上から発見し次第存在するものとなるが、今の実装のほうが便利なので良いかあ〜、と思ったり...
     let mut env = Env::new(&prog.globals)?;
     let mut fns = HashMap::new();
     let mut global_vars = HashMap::new();
@@ -35,6 +42,9 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                     },
                 );
             }
+            symbols::globals::Globals::TypeDef(_) => {
+                // nothing to do
+            }
         }
     }
 
@@ -54,6 +64,10 @@ pub enum TypeError {
     ArgumentMismatch(Option<Type>, Option<Type>), // callee type, calling type
     Mismatch(Type, Type),                         // outer type, inner type
     DerefNotAllowed(Type),
+    StructNotAssignable(String),                 // struct name
+    TypeAndOperatorNotSupported(String, String), // type name, op string
+    StructMemberConflict(String, String),        // struct name, member string
+    TypeConflict(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -92,11 +106,72 @@ pub enum TypeComarison {
     ImplicitlyUnconvertable,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
+pub struct StructContent {
+    members: HashMap<String, (Type, usize)>,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructMember {
+    pub typ: Type,
+    pub name: String,
+    pub offset: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct StructType {
+    pub name: String,
+    pub members: Vec<StructMember>,
+    size: usize,
+    align: usize,
+}
+
+impl StructType {
+    pub fn new(name: String, mems: &[(Type, String)]) -> Self {
+        let mut offset = 0usize;
+        let mut members: Vec<StructMember> = vec![];
+        let mut max_align = 0usize;
+
+        for (typ, name) in mems {
+            // TODO: detect member name confiliction
+            offset = offset.next_multiple_of(typ.align());
+            members.push(StructMember {
+                typ: typ.clone(),
+                name: name.clone(),
+                offset,
+            });
+
+            offset += typ.size();
+
+            if max_align < typ.align() {
+                max_align = typ.align();
+            }
+        }
+
+        Self {
+            name,
+            members,
+            size: offset.next_multiple_of(max_align),
+            align: max_align,
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    pub fn align(&self) -> usize {
+        self.align
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Type {
     Primitive(PrimitiveType),
     PtrTo(Box<Type>),
     Array(Box<Type>, usize),
+    Struct(StructType),
+    Incomplete(String),
 }
 
 impl Type {
@@ -105,6 +180,8 @@ impl Type {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.size(),
             Self::Array(typ, size) => typ.size() * size,
+            Self::Struct(s) => s.size(),
+            Self::Incomplete(_) => 0, // ISSUE: size unknown
         }
     }
 
@@ -113,6 +190,8 @@ impl Type {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.align(),
             Self::Array(typ, _) => typ.align(),
+            Self::Struct(s) => s.align(),
+            Self::Incomplete(_) => 0, // ISSUE: align unknown
         }
     }
 
@@ -151,6 +230,8 @@ impl Type {
                     }
                 }
                 Self::Array(_, _) => TypeComarison::ImplicitlyUnconvertable,
+                Self::Struct(_) => TypeComarison::ImplicitlyUnconvertable,
+                Self::Incomplete(_) => TypeComarison::ImplicitlyUnconvertable,
             },
             Self::PtrTo(pointed) => match other {
                 Self::Primitive(other_prim) => match other_prim {
@@ -165,9 +246,10 @@ impl Type {
                 Self::PtrTo(other_pointed) => {
                     if pointed.equals(other_pointed) {
                         TypeComarison::Equal
-                    } else if pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
+                    } else if matches!(pointed.deref(), &Type::Primitive(PrimitiveType::Void)) {
                         TypeComarison::ImplicitlyConvertableFrom
-                    } else if other_pointed.deref() == &Type::Primitive(PrimitiveType::Void) {
+                    } else if matches!(other_pointed.deref(), &Type::Primitive(PrimitiveType::Void))
+                    {
                         TypeComarison::ImplicitlyConvertableTo
                     } else {
                         pointed.compare(other_pointed) // WARN: is it true?
@@ -180,8 +262,12 @@ impl Type {
                         TypeComarison::ImplicitlyUnconvertable
                     }
                 }
+                Self::Struct(_) => TypeComarison::ImplicitlyUnconvertable,
+                Self::Incomplete(_) => TypeComarison::ImplicitlyUnconvertable,
             },
             Self::Array(atyp, _) => Self::PtrTo(Box::new(*atyp.clone())).compare(other),
+            Self::Struct(_) => TypeComarison::ImplicitlyUnconvertable,
+            Self::Incomplete(_) => TypeComarison::ImplicitlyUnconvertable,
         }
     }
 
@@ -196,6 +282,19 @@ impl Type {
                 _ => false,
             },
             Self::Array(_, _) => false,
+            Self::Struct(s) => {
+                if let Self::Struct(other_s) = other {
+                    // ISSUE: struct names must guarantee not conflicting
+                    s.name == other_s.name
+                } else {
+                    false
+                }
+            }
+            Self::Incomplete(name) => match other {
+                Self::Struct(s) => name == &s.name,
+                Self::Incomplete(other_name) => name == other_name,
+                _ => false,
+            },
         }
     }
 
@@ -223,6 +322,12 @@ impl Type {
                         // NOTE:
                         // atyp..get_ptr_base()
                     }
+                    Self::Struct(_) => {
+                        None
+                        // NOTE:
+                        // Some(s.clone())
+                    }
+                    Self::Incomplete(_) => None,
                 }
             }
             Self::Array(_, _) => {
@@ -230,6 +335,12 @@ impl Type {
                 // NOTE:
                 // atyp.get_ptr_base()
             }
+            Self::Struct(_) => {
+                None
+                // NOTE:
+                // Some(s.clone())
+            }
+            Self::Incomplete(_) => None,
         }
     }
 }
@@ -258,9 +369,15 @@ pub struct Env<'parsed> {
 }
 
 #[derive(Debug)]
+pub enum DefinedTypeContent {
+    Struct(StructContent),
+}
+
+#[derive(Debug)]
 struct EnvGlobal<'parsed> {
     fns: HashMap<String, FnSignature<'parsed>>,
     vars: HashMap<String, Variable>,
+    types: HashMap<String, DefinedTypeContent>,
     string_literals: HashMap<String, usize>,
 }
 
@@ -275,6 +392,7 @@ impl<'parsed> Env<'parsed> {
     fn new(globals: &'parsed [symbols::globals::Globals]) -> Result<Self, TypeError> {
         let mut fns = HashMap::<String, FnSignature>::new();
         let mut vars = HashMap::new();
+        let mut types = HashMap::new();
 
         for g in globals {
             match g {
@@ -305,6 +423,31 @@ impl<'parsed> Env<'parsed> {
                         );
                     }
                 }
+                symbols::globals::Globals::TypeDef(t) => match t {
+                    TypeDef::Struct(s) => {
+                        let mut members = HashMap::new();
+
+                        for mem in &s.members {
+                            if !members.contains_key(&mem.name) {
+                                members.insert(mem.name.clone(), (mem.typ.clone(), mem.offset));
+                            } else {
+                                return Err(TypeError::StructMemberConflict(
+                                    s.name.clone(),
+                                    mem.name.clone(),
+                                ));
+                            }
+                        }
+
+                        if !types.contains_key(&s.name) {
+                            types.insert(
+                                s.name.clone(),
+                                DefinedTypeContent::Struct(StructContent { members }),
+                            );
+                        } else {
+                            return Err(TypeError::TypeConflict(s.name.clone()));
+                        }
+                    }
+                },
             }
         }
 
@@ -312,6 +455,7 @@ impl<'parsed> Env<'parsed> {
             global: EnvGlobal {
                 fns,
                 vars,
+                types,
                 string_literals: HashMap::new(),
             },
             local: None,
