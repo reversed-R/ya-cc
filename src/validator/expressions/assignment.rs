@@ -6,10 +6,18 @@ use crate::{
     },
 };
 
-impl From<&assignment::AssignOperator> for BinOperator {
-    fn from(value: &assignment::AssignOperator) -> Self {
+impl BinOperator {
+    fn from_assignop(value: &assignment::AssignOperator, typ: &Type) -> Self {
         match value {
-            assignment::AssignOperator::Assign => BinOperator::Assign,
+            assignment::AssignOperator::Assign => match typ {
+                Type::Primitive(p) => match p {
+                    PrimitiveType::Int => Self::IAssign,
+                    PrimitiveType::Char => Self::CAssign,
+                    PrimitiveType::Void => Self::IAssign, // WARN: is it true?
+                },
+                Type::PtrTo(_) => Self::PAssign,
+                Type::Array(_, _) => Self::PAssign, // WARN: is it true?
+            },
         }
     }
 }
@@ -67,7 +75,7 @@ impl ExprTypeValidate for assignment::AssignExpr {
             }
 
             src = Exprs::Binary(Binary {
-                op: BinOperator::from(&left.op),
+                op: BinOperator::from_assignop(&left.op, &typ),
                 left: Box::new(dst),
                 right: Box::new(src),
             });

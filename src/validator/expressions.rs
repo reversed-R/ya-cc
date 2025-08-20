@@ -66,7 +66,9 @@ pub enum BinOperator {
     LesEq,
     Equal,
     NotEq,
-    Assign,
+    IAssign,
+    CAssign,
+    PAssign,
 }
 
 #[derive(Debug, Clone)]

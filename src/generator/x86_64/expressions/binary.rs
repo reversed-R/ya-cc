@@ -150,8 +150,24 @@ pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) 
             println!("setne al");
             println!("movzb rax, al");
         }
+        BinOperator::IAssign => {
+            if let Exprs::Unary(left) = &*bin.left {
+                // WARN: is it true?
 
-        BinOperator::Assign => {
+                unary::generate_as_left(left, env);
+                println!("push rax");
+
+                bin.right.generate(env);
+
+                println!("pop rdi");
+
+                // WARN: if int size become 4 bytes, fix it
+                println!("mov [rdi], rax");
+            } else {
+                panic!("Invalid Left Value");
+            }
+        }
+        BinOperator::PAssign => {
             if let Exprs::Unary(left) = &*bin.left {
                 // WARN: is it true?
 
@@ -163,6 +179,22 @@ pub fn generate(bin: &Binary, env: &mut crate::generator::x86_64::globals::Env) 
                 println!("pop rdi");
 
                 println!("mov [rdi], rax");
+            } else {
+                panic!("Invalid Left Value");
+            }
+        }
+        BinOperator::CAssign => {
+            if let Exprs::Unary(left) = &*bin.left {
+                // WARN: is it true?
+
+                unary::generate_as_left(left, env);
+                println!("push rax");
+
+                bin.right.generate(env);
+
+                println!("pop rdi");
+
+                println!("mov [rdi], al");
             } else {
                 panic!("Invalid Left Value");
             }
