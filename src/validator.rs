@@ -210,6 +210,28 @@ impl Type {
             None
         }
     }
+
+    pub fn get_ptr_base(&self) -> Option<PrimitiveType> {
+        match self {
+            Self::Primitive(p) => Some(p.clone()),
+            Self::PtrTo(pointed) => {
+                match self {
+                    Self::Primitive(p) => Some(p.clone()),
+                    Self::PtrTo(_) => pointed.get_ptr_base(),
+                    Self::Array(_, _) => {
+                        None
+                        // NOTE:
+                        // atyp..get_ptr_base()
+                    }
+                }
+            }
+            Self::Array(_, _) => {
+                None
+                // NOTE:
+                // atyp.get_ptr_base()
+            }
+        }
+    }
 }
 
 #[derive(Debug)]

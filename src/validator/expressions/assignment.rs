@@ -17,7 +17,17 @@ impl From<&assignment::AssignOperator> for BinOperator {
 fn is_numeric_zero(src: &Exprs) -> bool {
     matches!(src, Exprs::Primary(Primary::Literal(Literal::Int(0))))
         || if let Exprs::Unary(unary) = src {
-            matches!(unary.op, UnOperator::Deref(0))
+            matches!(unary.op, UnOperator::IDeref(0))
+                && matches!(
+                    *unary.expr,
+                    Exprs::Primary(Primary::Literal(Literal::Int(0)))
+                )
+        } else {
+            false
+        }
+        || if let Exprs::Unary(unary) = src {
+            // WARN: is it necessary?
+            matches!(unary.op, UnOperator::CDeref(0))
                 && matches!(
                     *unary.expr,
                     Exprs::Primary(Primary::Literal(Literal::Int(0)))

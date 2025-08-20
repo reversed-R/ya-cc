@@ -41,7 +41,22 @@ impl ExprTypeValidate for unary::Unary {
         let refop;
 
         if ref_count >= 0 {
-            refop = UnOperator::Deref(ref_count as usize);
+            if let Some(p) = typ.get_ptr_base() {
+                match p {
+                    PrimitiveType::Int => {
+                        refop = UnOperator::IDeref(ref_count as usize);
+                    }
+                    PrimitiveType::Char => {
+                        refop = UnOperator::CDeref(ref_count as usize);
+                    }
+                    PrimitiveType::Void => {
+                        // WARN: is it true?
+                        refop = UnOperator::IDeref(ref_count as usize);
+                    }
+                }
+            } else {
+                return Err(TypeError::DerefNotAllowed(typ));
+            }
         } else if ref_count == -1 {
             refop = UnOperator::Ref;
         } else {

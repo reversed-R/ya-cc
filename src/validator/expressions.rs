@@ -73,7 +73,8 @@ pub enum BinOperator {
 pub enum UnOperator {
     Neg,
     Ref,
-    Deref(usize),
+    IDeref(usize),
+    CDeref(usize),
 }
 
 impl ExprTypeValidate for crate::parser::symbols::expressions::Expr {
