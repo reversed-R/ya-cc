@@ -44,8 +44,8 @@ impl Globals {
 
             let typ = consume_scalar_type(primitive, tokens);
 
-            if let TokenKind::String(name) =
-                matches(tokens.next(), vec![TokenKind::String("".to_string())])?
+            if let TokenKind::Identifier(name) =
+                matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
             {
                 let kind = matches(
                     tokens.peek().copied(),
@@ -158,8 +158,8 @@ impl Parse for ArgsDec {
 
                 let typ = consume_scalar_type(primitive, tokens);
 
-                if let TokenKind::String(arg) =
-                    matches(tokens.next(), vec![TokenKind::String("".to_string())])?
+                if let TokenKind::Identifier(arg) =
+                    matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
                 {
                     args.push(VarDec {
                         typ,

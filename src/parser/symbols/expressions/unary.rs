@@ -75,7 +75,7 @@ impl Parse for Unary {
             }
         } else {
             Err(ParseError::InvalidEOF(vec![
-                TokenKind::String("".to_string()),
+                TokenKind::Identifier("".to_string()),
                 TokenKind::IntLiteral(0),
                 TokenKind::Plus,
                 TokenKind::Minus,

@@ -36,8 +36,8 @@ impl Parse for VarDec {
 
             let typ = consume_scalar_type(primitive, tokens);
 
-            if let TokenKind::String(id) =
-                matches(tokens.next(), vec![TokenKind::String("".to_string())])?
+            if let TokenKind::Identifier(id) =
+                matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
             {
                 let kind = matches(
                     tokens.peek().copied(),

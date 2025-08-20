@@ -162,7 +162,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
         .flatten()
         .map(|t| {
             match t.kind {
-                TokenKind::String(s) => {
+                TokenKind::Identifier(s) => {
                     // check literal expressions
                     if let Some(ikind) = try_get_dec_int(&s) {
                         Token {
@@ -205,7 +205,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                         }
 
                         Token {
-                            kind: TokenKind::String(s),
+                            kind: TokenKind::Identifier(s),
                             range: Range {
                                 begin: t.range.begin,
                                 end: t.range.end,
@@ -232,7 +232,7 @@ fn to_tokens(str: &str, delims: &Vec<TokenKind>, offset: usize) -> Vec<Token> {
                 if i + p.len() - 1 < str.len() && p == &str[i..i + p.len()] {
                     if i - last_index > 0 {
                         tokens.push(Token {
-                            kind: TokenKind::String(str[last_index..i].to_string()),
+                            kind: TokenKind::Identifier(str[last_index..i].to_string()),
                             range: Range {
                                 begin: offset + last_index,
                                 end: offset + i,
@@ -265,7 +265,7 @@ fn to_tokens(str: &str, delims: &Vec<TokenKind>, offset: usize) -> Vec<Token> {
 
     if last_index < str.len() {
         tokens.push(Token {
-            kind: TokenKind::String(str[last_index..].to_string()),
+            kind: TokenKind::Identifier(str[last_index..].to_string()),
             range: Range {
                 begin: offset + last_index,
                 end: offset + last_index + str.len(),

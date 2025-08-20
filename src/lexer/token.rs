@@ -12,7 +12,7 @@ pub struct Token {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
-    String(String),        // string of remain characters
+    Identifier(String),    // identifier
     IntLiteral(i64),       // int literal
     CharLiteral(u8),       // char literal
     StringLiteral(String), // string literal
@@ -51,7 +51,7 @@ pub enum TokenKind {
 impl TokenKind {
     pub fn pattern(&self) -> String {
         match self {
-            Self::String(_) => "".to_string(),
+            Self::Identifier(_) => "".to_string(),
             Self::IntLiteral(_) => "".to_string(),
             Self::CharLiteral(_) => "".to_string(),
             Self::StringLiteral(_) => "".to_string(),

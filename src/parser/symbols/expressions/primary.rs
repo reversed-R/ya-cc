@@ -39,7 +39,7 @@ impl Parse for Primary {
                 TokenKind::IntLiteral(i) => Ok(Self::Literal(Literal::Int(*i))),
                 TokenKind::CharLiteral(c) => Ok(Self::Literal(Literal::Char(*c))),
                 TokenKind::StringLiteral(s) => Ok(Self::Literal(Literal::StringLiteral(s.clone()))),
-                TokenKind::String(s) => {
+                TokenKind::Identifier(s) => {
                     if let Some(t) = tokens.peek() {
                         if let TokenKind::LPare = t.kind {
                             tokens.next();
@@ -85,21 +85,22 @@ impl Parse for Primary {
                         Ok(Self::Expr(Box::new(expr)))
                     } else {
                         Err(ParseError::InvalidToken(
-                            vec![TokenKind::String("".to_string()), TokenKind::IntLiteral(0)],
+                            vec![
+                                TokenKind::Identifier("".to_string()),
+                                TokenKind::IntLiteral(0),
+                            ],
                             tokens.peek().unwrap().clone().clone(),
                         ))
                     }
                 }
-                _ => {
-                    Err(ParseError::InvalidEOF(vec![
-                        TokenKind::String("".to_string()),
-                        TokenKind::IntLiteral(0),
-                    ]))
-                }
+                _ => Err(ParseError::InvalidEOF(vec![
+                    TokenKind::Identifier("".to_string()),
+                    TokenKind::IntLiteral(0),
+                ])),
             }
         } else {
             Err(ParseError::InvalidEOF(vec![
-                TokenKind::String("".to_string()),
+                TokenKind::Identifier("".to_string()),
                 TokenKind::IntLiteral(0),
             ]))
         }
