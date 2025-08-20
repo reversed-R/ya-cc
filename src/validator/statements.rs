@@ -44,7 +44,10 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
                     match local.rtype.compare(&expr_typ) {
                         TypeComarison::Equal => Ok(Stmt::Return(expr)),
                         TypeComarison::ImplicitlyConvertableFrom => Ok(Stmt::Return(expr)),
-                        _ => Err(TypeError::Mismatch(local.rtype.clone(), expr_typ)),
+                        _ => Err(TypeError::Mismatch(
+                            Box::new(local.rtype.clone()),
+                            Box::new(expr_typ),
+                        )),
                     }
                 } else {
                     Err(TypeError::OutOfScopes)

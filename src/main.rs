@@ -30,7 +30,7 @@ fn main() {
                             generator::x86_64::generate(&validated_prog);
                         }
                         Err(e) => {
-                            panic!("{e:#?}");
+                            e.panic_with_error_message();
                         }
                     }
                 }

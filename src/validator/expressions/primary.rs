@@ -71,13 +71,16 @@ impl primary::Primary {
                             TypeComarison::ImplicitlyConvertableFrom => {}
                             _ => {
                                 return Err(TypeError::ArgumentMismatch(
-                                    Some(acallee.typ.clone()),
-                                    Some(acalling_typ),
+                                    Some(Box::new(acallee.typ.clone())),
+                                    Some(Box::new(acalling_typ)),
                                 ));
                             }
                         }
                     } else {
-                        return Err(TypeError::ArgumentMismatch(None, Some(acalling_typ)));
+                        return Err(TypeError::ArgumentMismatch(
+                            None,
+                            Some(Box::new(acalling_typ)),
+                        ));
                     }
 
                     i += 1;
@@ -86,7 +89,10 @@ impl primary::Primary {
 
                 let fcallee = env.global.fns.get(&fcalling.name).unwrap();
                 if let Some(acallee) = fcallee.args.get(i) {
-                    Err(TypeError::ArgumentMismatch(Some(acallee.typ.clone()), None))
+                    Err(TypeError::ArgumentMismatch(
+                        Some(Box::new(acallee.typ.clone())),
+                        None,
+                    ))
                 } else {
                     Ok((
                         fcallee.rtype.clone(),

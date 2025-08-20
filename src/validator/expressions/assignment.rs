@@ -74,7 +74,7 @@ impl ExprTypeValidate for assignment::AssignExpr {
             {
                 typ = dst_typ;
             } else {
-                return Err(TypeError::Mismatch(dst_typ, typ));
+                return Err(TypeError::Mismatch(Box::new(dst_typ), Box::new(typ)));
             }
 
             src = Exprs::Binary(Binary {

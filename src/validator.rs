@@ -2,7 +2,7 @@ pub mod expressions;
 pub mod globals;
 pub mod statements;
 
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, fmt::Display, ops::Deref};
 
 use crate::{
     parser::symbols::{
@@ -61,8 +61,8 @@ pub enum TypeError {
     FunctionNotFound(String),
     VariableConflict(String),
     OutOfScopes,
-    ArgumentMismatch(Option<Type>, Option<Type>), // callee type, calling type
-    Mismatch(Type, Type),                         // outer type, inner type
+    ArgumentMismatch(Option<Box<Type>>, Option<Box<Type>>), // callee type, calling type
+    Mismatch(Box<Type>, Box<Type>),                         // outer type, inner type
     DerefNotAllowed(Type),
     StructNotAssignable(String),                 // struct name
     TypeAndOperatorNotSupported(String, String), // type name, op string
@@ -584,6 +584,78 @@ impl<'fndec> From<&'fndec FnDef> for FnSignature<'fndec> {
         Self {
             args: &value.args,
             rtype: &value.rtype,
+        }
+    }
+}
+
+impl TypeError {
+    pub fn panic_with_error_message(&self) -> ! {
+        eprint!("\x1b[1;38;2;255;20;0merror\x1b[m: ");
+        eprint!("\x1b[1m");
+        match self {
+            Self::VariableNotFound(var) => {
+                eprint!("variable `{var}` not found");
+            }
+            Self::FunctionNotFound(f) => {
+                eprint!("function `{f}` not found");
+            }
+            Self::VariableConflict(var) => {
+                eprint!("variable `{var}` conflicting");
+            }
+            Self::ArgumentMismatch(callee_typ, calling_typ) => {
+                if let Some(callee_typ) = callee_typ {
+                    if let Some(calling_typ) = calling_typ {
+                        eprint!("types mismatch in function call, expected `{callee_typ}`, but found `{calling_typ}`");
+                    } else {
+                        eprint!("types mismatch in function call, expected `{callee_typ}`, but found nothing");
+                    }
+                } else if let Some(calling_typ) = calling_typ {
+                    eprint!("types mismatch in function call, expected nothing, but found `{calling_typ}`");
+                } else {
+                    eprint!("types mismatch in function call, expected nothing, but found nothing");
+                    // ISSUE: ???
+                }
+            }
+            Self::Mismatch(outer_typ, inner_typ) => {
+                eprint!("types mismatch, expected `{outer_typ}`, but found `{inner_typ}`");
+            }
+            Self::DerefNotAllowed(typ) => {
+                eprint!("dereference not allowed for `{typ}`");
+            }
+            Self::StructNotAssignable(s) => {
+                eprint!("assignment not allowed for `struct {s}`");
+            }
+            Self::TypeAndOperatorNotSupported(typ, op) => {
+                eprint!("operator `{op}` not allowed for `{typ}`");
+            }
+            Self::StructMemberConflict(s, mem) => {
+                eprint!("member `{mem}` conflicting in `struct {s}`");
+            }
+            Self::TypeConflict(typ) => {
+                eprint!("type `{typ}` conflicting");
+            }
+            Self::OutOfScopes => {
+                eprint!("unknown compiler error occured, sorry");
+            }
+        }
+
+        eprintln!("\x1b[m");
+        panic!("");
+    }
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::PtrTo(p) => write!(f, "{p}*"),
+            Self::Primitive(p) => match p {
+                PrimitiveType::Int => write!(f, "int"),
+                PrimitiveType::Char => write!(f, "char"),
+                PrimitiveType::Void => write!(f, "void"),
+            },
+            Self::Array(typ, size) => write!(f, "{typ}[{size}]"),
+            Self::Struct(s) => write!(f, "struct {}", s.name),
+            Self::Incomplete(i) => write!(f, "{i}"),
         }
     }
 }

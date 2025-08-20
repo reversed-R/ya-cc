@@ -29,7 +29,7 @@ impl ExprTypeValidate for equality::EqualityExpr {
             let (right_typ, right) = r.right.validate(env)?;
 
             if !typ.equals(&right_typ) {
-                return Err(TypeError::Mismatch(typ, right_typ));
+                return Err(TypeError::Mismatch(Box::new(typ), Box::new(right_typ)));
             }
 
             expr = Exprs::Binary(Binary {

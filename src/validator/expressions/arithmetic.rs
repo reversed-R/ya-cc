@@ -141,7 +141,7 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
                     });
                 }
                 TypeComarison::ImplicitlyUnconvertable => {
-                    return Err(TypeError::Mismatch(typ, right_typ));
+                    return Err(TypeError::Mismatch(Box::new(typ), Box::new(right_typ)));
                 }
             }
         }

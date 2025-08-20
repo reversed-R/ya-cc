@@ -1,0 +1,7 @@
+int printf(char *fmt);
+
+int main() {
+  printf('H');
+
+  return 0;
+}
