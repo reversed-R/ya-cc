@@ -44,6 +44,7 @@ impl Parse for Stmt {
                 TokenKind::LBrace => Ok(Self::Block(BlockStmt::consume(tokens)?.stmts)),
                 TokenKind::Int => Ok(Self::VarDec(VarDec::consume(tokens)?)),
                 TokenKind::Char => Ok(Self::VarDec(VarDec::consume(tokens)?)),
+                TokenKind::Struct => Ok(Self::VarDec(VarDec::consume(tokens)?)),
                 _ => Ok(Self::Expr(ExprStmt::consume(tokens)?.expr)),
             }
         } else {
@@ -52,6 +53,8 @@ impl Parse for Stmt {
                 TokenKind::While,
                 TokenKind::Return,
                 TokenKind::Int,
+                TokenKind::Char,
+                TokenKind::Struct,
             ]))
         }
     }

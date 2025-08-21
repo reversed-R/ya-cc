@@ -24,6 +24,7 @@ fn main() {
 
             match parser::parse(tokens) {
                 Ok(prog) => {
+                    // eprintln!("{prog:#?}");
                     match validator::validate(&prog) {
                         Ok(validated_prog) => {
                             // eprintln!("{:#?}", validated_prog);
@@ -38,7 +39,6 @@ fn main() {
                     e.panic_with_error_message(&contents);
                 }
             }
-            // eprintln!("{:#?}", prog);
         }
     } else {
         panic!("1 Argument Required: <file-path>")

@@ -1,6 +1,8 @@
+use std::ops::Deref;
+
 use crate::{
     lexer::token::{Token, TokenKind},
-    parser::{matches, Parse, ParseError},
+    parser::{matches, symbols::globals::consume_struct_and_name, Parse, ParseError},
     validator::{PrimitiveType, Type},
 };
 
@@ -18,18 +20,23 @@ impl Parse for VarDec {
     ) -> Result<Self::SelfType, ParseError> {
         let base: Type;
 
-        if let Some(t) = tokens.next() {
+        if let Some(t) = tokens.peek() {
             match t.kind {
                 TokenKind::Int => {
+                    tokens.next();
                     base = Type::Primitive(PrimitiveType::Int);
                 }
                 TokenKind::Char => {
+                    tokens.next();
                     base = Type::Primitive(PrimitiveType::Char);
+                }
+                TokenKind::Struct => {
+                    base = Type::Incomplete(consume_struct_and_name(tokens)?);
                 }
                 _ => {
                     return Err(ParseError::InvalidToken(
-                        vec![TokenKind::Int, TokenKind::Char],
-                        t.clone(),
+                        vec![TokenKind::Int, TokenKind::Char, TokenKind::Struct],
+                        t.to_owned().clone(),
                     ));
                 }
             }
@@ -76,6 +83,7 @@ impl Parse for VarDec {
         Err(ParseError::InvalidEOF(vec![
             TokenKind::Int,
             TokenKind::Char,
+            TokenKind::Struct,
         ]))
     }
 }
