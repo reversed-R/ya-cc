@@ -59,6 +59,7 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
 pub enum TypeError {
     VariableNotFound(String),
     FunctionNotFound(String),
+    TypeNotFound(String),
     VariableConflict(String),
     OutOfScopes,
     ArgumentMismatch(Option<Box<Type>>, Option<Box<Type>>), // callee type, calling type
@@ -109,6 +110,8 @@ pub enum TypeComarison {
 #[derive(Debug, Clone)]
 pub struct StructContent {
     members: HashMap<String, (Type, usize)>,
+    size: usize,
+    align: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -441,7 +444,11 @@ impl<'parsed> Env<'parsed> {
                         if !types.contains_key(&s.name) {
                             types.insert(
                                 s.name.clone(),
-                                DefinedTypeContent::Struct(StructContent { members }),
+                                DefinedTypeContent::Struct(StructContent {
+                                    members,
+                                    size: s.size,
+                                    align: s.align,
+                                }),
                             );
                         } else {
                             return Err(TypeError::TypeConflict(s.name.clone()));
@@ -507,7 +514,19 @@ impl<'parsed> Env<'parsed> {
     }
 
     pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset = (self.get_local_varsize_sum() + typ.size()).next_multiple_of(typ.align());
+        let offset = if let Type::Incomplete(i) = &typ {
+            if let Some(defed_typ) = self.global.types.get(i) {
+                match defed_typ {
+                    DefinedTypeContent::Struct(s) => {
+                        (self.get_local_varsize_sum() + s.size).next_multiple_of(s.align)
+                    }
+                }
+            } else {
+                return Err(TypeError::TypeNotFound(i.clone()));
+            }
+        } else {
+            (self.get_local_varsize_sum() + typ.size()).next_multiple_of(typ.align())
+        };
 
         if let Some(local) = &mut self.local {
             if let Some(last_scope) = local.vars.last_mut() {
@@ -598,6 +617,9 @@ impl TypeError {
             }
             Self::FunctionNotFound(f) => {
                 eprint!("function `{f}` not found");
+            }
+            Self::TypeNotFound(typ) => {
+                eprint!("type `{typ}` not found");
             }
             Self::VariableConflict(var) => {
                 eprint!("variable `{var}` conflicting");
