@@ -84,6 +84,8 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
         TokenKind::GrtEq,     // >=
         TokenKind::Equal,     // ==
         TokenKind::NotEq,     // !=
+        TokenKind::Arrow,     // ->
+        TokenKind::Dot,       // .
         TokenKind::LPare,     // (
         TokenKind::RPare,     // )
         TokenKind::LBrace,    // {

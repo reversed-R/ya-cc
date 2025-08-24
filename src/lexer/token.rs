@@ -45,6 +45,8 @@ pub enum TokenKind {
     NotEq,                 // !=
     Assign,                // =
     Comma,                 // ,
+    Dot,                   // .
+    Arrow,                 // ->
     Colon,                 // :
     SemiColon,             // ;
 }
@@ -85,6 +87,8 @@ impl TokenKind {
             Self::NotEq => "!=".to_string(),
             Self::Assign => "=".to_string(),
             Self::Comma => ",".to_string(),
+            Self::Dot => ".".to_string(),
+            Self::Arrow => "->".to_string(),
             Self::Colon => ":".to_string(),
             Self::SemiColon => ";".to_string(),
         }

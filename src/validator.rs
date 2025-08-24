@@ -60,6 +60,7 @@ pub enum TypeError {
     VariableNotFound(String),
     FunctionNotFound(String),
     TypeNotFound(String),
+    StructMemberNotFound(String, String), // struct name, member string
     VariableConflict(String),
     OutOfScopes,
     ArgumentMismatch(Option<Box<Type>>, Option<Box<Type>>), // callee type, calling type
@@ -165,6 +166,10 @@ impl StructType {
 
     pub fn align(&self) -> usize {
         self.align
+    }
+
+    pub fn get_member(&self, member: &str) -> Option<&StructMember> {
+        self.members.iter().find(|mem| mem.name == member)
     }
 }
 
@@ -313,12 +318,12 @@ impl Type {
         }
     }
 
-    pub fn get_ptr_base(&self) -> Option<PrimitiveType> {
+    pub fn get_ptr_base(&self) -> Option<Self> {
         match self {
-            Self::Primitive(p) => Some(p.clone()),
+            Self::Primitive(p) => Some(Self::Primitive(p.clone())),
             Self::PtrTo(pointed) => {
                 match self {
-                    Self::Primitive(p) => Some(p.clone()),
+                    Self::Primitive(p) => Some(Self::Primitive(p.clone())),
                     Self::PtrTo(_) => pointed.get_ptr_base(),
                     Self::Array(_, _) => {
                         None
@@ -338,12 +343,8 @@ impl Type {
                 // NOTE:
                 // atyp.get_ptr_base()
             }
-            Self::Struct(_) => {
-                None
-                // NOTE:
-                // Some(s.clone())
-            }
-            Self::Incomplete(_) => None,
+            Self::Struct(s) => Some(Self::Struct(s.clone())),
+            Self::Incomplete(i) => Some(Self::Incomplete(i.clone())),
         }
     }
 }
@@ -555,8 +556,8 @@ impl<'parsed> Env<'parsed> {
         }
     }
 
-    pub fn get_var(&mut self, var: &String) -> Option<&Variable> {
-        if let Some(local) = &mut self.local {
+    pub fn get_var(&self, var: &String) -> Option<&Variable> {
+        if let Some(local) = &self.local {
             for scope in local.vars.iter().rev() {
                 if let Some(var) = scope.get(var) {
                     return Some(var);
@@ -572,7 +573,24 @@ impl<'parsed> Env<'parsed> {
             local
                 .vars
                 .iter()
-                .map(|scope| scope.values().map(|v| v.typ.size()).sum::<usize>())
+                .map(|scope| {
+                    scope
+                        .values()
+                        .map(|v| {
+                            if let Type::Incomplete(i) = &v.typ {
+                                if let Some(defed_typ) = self.global.types.get(i) {
+                                    match defed_typ {
+                                        DefinedTypeContent::Struct(s) => s.size,
+                                    }
+                                } else {
+                                    panic!("Unknown Type");
+                                }
+                            } else {
+                                v.typ.size()
+                            }
+                        })
+                        .sum::<usize>()
+                })
                 .sum::<usize>()
         } else {
             0
@@ -620,6 +638,9 @@ impl TypeError {
             }
             Self::TypeNotFound(typ) => {
                 eprint!("type `{typ}` not found");
+            }
+            Self::StructMemberNotFound(s, mem) => {
+                eprint!("member `{mem}` not found in struct `{s}`");
             }
             Self::VariableConflict(var) => {
                 eprint!("variable `{var}` conflicting");

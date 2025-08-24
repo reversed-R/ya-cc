@@ -11,6 +11,8 @@ use crate::{
 pub enum PostfixExpr {
     Primary(Primary),
     Index(Box<PostfixExpr>, Box<Expr>),
+    DotAccess(Primary, String),
+    ArrowAccess(Primary, String),
 }
 
 impl Parse for PostfixExpr {
@@ -37,6 +39,27 @@ impl Parse for PostfixExpr {
                         Err(ParseError::Unknown)
                     }
                 }
+                TokenKind::Dot => {
+                    tokens.next();
+                    if let TokenKind::Identifier(member) =
+                        matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
+                    {
+                        Ok(Self::DotAccess(prim, member))
+                    } else {
+                        Err(ParseError::Unknown)
+                    }
+                }
+                TokenKind::Arrow => {
+                    tokens.next();
+                    if let TokenKind::Identifier(member) =
+                        matches(tokens.next(), vec![TokenKind::Identifier("".to_string())])?
+                    {
+                        Ok(Self::ArrowAccess(prim, member))
+                    } else {
+                        Err(ParseError::Unknown)
+                    }
+                }
+
                 _ => Ok(Self::Primary(prim)),
             }
         } else {
