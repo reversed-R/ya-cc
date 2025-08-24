@@ -2,7 +2,11 @@ pub mod expressions;
 pub mod globals;
 pub mod statements;
 
-use std::{collections::HashMap, fmt::Display, ops::Deref};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    fmt::Display,
+    ops::Deref,
+};
 
 use crate::{
     parser::symbols::{
@@ -531,22 +535,21 @@ impl<'parsed> Env<'parsed> {
 
         if let Some(local) = &mut self.local {
             if let Some(last_scope) = local.vars.last_mut() {
-                if !last_scope.contains_key(&var) {
-                    last_scope.insert(
-                        var,
-                        Variable {
+                match last_scope.entry(var.clone()) {
+                    Entry::Vacant(e) => {
+                        e.insert(Variable {
                             typ,
                             addr: VarAddr::Local(offset),
-                        },
-                    );
+                        });
 
-                    if local.local_max_offset < offset {
-                        local.local_max_offset = offset;
+                        if local.local_max_offset < offset {
+                            local.local_max_offset = offset;
+                        }
+
+                        Ok(())
                     }
 
-                    Ok(())
-                } else {
-                    Err(TypeError::VariableConflict(var))
+                    Entry::Occupied(_) => Err(TypeError::VariableConflict(var)),
                 }
             } else {
                 Err(TypeError::OutOfScopes)

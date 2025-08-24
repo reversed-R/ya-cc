@@ -6,8 +6,8 @@ use crate::{
         globals::LocalGenerate,
     },
     validator::{
-        expressions::{Exprs, Literal, Primary, UnOperator, Unary},
-        PrimitiveType, Type, VarAddr,
+        expressions::{Exprs, Primary, UnOperator, Unary},
+        VarAddr,
     },
 };
 

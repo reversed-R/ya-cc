@@ -26,7 +26,7 @@ pub struct FnCall {
 #[derive(Debug, Clone)]
 pub enum Literal {
     Int(i64),
-    Float(f64),
+    // Float(f64),
     Char(u8),
     String(usize),
 }

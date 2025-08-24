@@ -21,12 +21,8 @@ impl Parse for Program {
     ) -> Result<Self::SelfType, ParseError> {
         let mut prog = Self { globals: vec![] };
 
-        loop {
-            if let Some(global) = Globals::consume(tokens)? {
-                prog.globals.push(global);
-            } else {
-                break;
-            }
+        while let Some(global) = Globals::consume(tokens)? {
+            prog.globals.push(global);
         }
 
         Ok(prog)

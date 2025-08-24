@@ -64,46 +64,45 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                             }
                             Type::Incomplete(i) => {
                                 if let Some(defed_typ) = env.global.types.get(i) {
-                                    if let DefinedTypeContent::Struct(s) = defed_typ {
-                                        if let Some((mem_typ, mem_offset)) = s.members.get(member) {
-                                            let op = if mem_typ.size() == 1 {
-                                                UnOperator::CDeref(1)
-                                            } else {
-                                                UnOperator::IDeref(1)
-                                            };
-                                            // WARN: if install size 1, 2, 4, and 8, i fix it
+                                    match defed_typ {
+                                        DefinedTypeContent::Struct(s) => {
+                                            if let Some((mem_typ, mem_offset)) =
+                                                s.members.get(member)
+                                            {
+                                                let op = if mem_typ.size() == 1 {
+                                                    UnOperator::CDeref(1)
+                                                } else {
+                                                    UnOperator::IDeref(1)
+                                                };
+                                                // WARN: if install size 1, 2, 4, and 8, i fix it
 
-                                            Ok((
-                                                mem_typ.clone(),
-                                                Exprs::Unary(Unary {
-                                                    op,
-                                                    expr: Box::new(Exprs::Binary(Binary {
-                                                        op: BinOperator::Padd,
-                                                        left: Box::new(Exprs::Unary(Unary {
-                                                            op: UnOperator::Ref,
-                                                            expr: Box::new(Exprs::Primary(
-                                                                Primary::Variable(var.clone()),
+                                                Ok((
+                                                    mem_typ.clone(),
+                                                    Exprs::Unary(Unary {
+                                                        op,
+                                                        expr: Box::new(Exprs::Binary(Binary {
+                                                            op: BinOperator::Padd,
+                                                            left: Box::new(Exprs::Unary(Unary {
+                                                                op: UnOperator::Ref,
+                                                                expr: Box::new(Exprs::Primary(
+                                                                    Primary::Variable(var.clone()),
+                                                                )),
+                                                            })),
+                                                            right: Box::new(Exprs::Primary(
+                                                                Primary::Literal(Literal::Int(
+                                                                    *mem_offset as i64,
+                                                                )),
                                                             )),
                                                         })),
-                                                        right: Box::new(Exprs::Primary(
-                                                            Primary::Literal(Literal::Int(
-                                                                *mem_offset as i64,
-                                                            )),
-                                                        )),
-                                                    })),
-                                                }),
-                                            ))
-                                        } else {
-                                            Err(TypeError::StructMemberNotFound(
-                                                i.clone(),
-                                                member.clone(),
-                                            ))
+                                                    }),
+                                                ))
+                                            } else {
+                                                Err(TypeError::StructMemberNotFound(
+                                                    i.clone(),
+                                                    member.clone(),
+                                                ))
+                                            }
                                         }
-                                    } else {
-                                        Err(TypeError::TypeAndOperatorNotSupported(
-                                            i.to_string(),
-                                            ".".to_string(),
-                                        ))
                                     }
                                 } else {
                                     Err(TypeError::TypeNotFound(i.clone()))
@@ -241,45 +240,42 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                 }
                                 Type::Incomplete(i) => {
                                     if let Some(defed_typ) = env.global.types.get(i) {
-                                        if let DefinedTypeContent::Struct(s) = defed_typ {
-                                            if let Some((mem_typ, mem_offset)) =
-                                                s.members.get(member)
-                                            {
-                                                let op = if mem_typ.size() == 1 {
-                                                    UnOperator::CDeref(1)
-                                                } else {
-                                                    UnOperator::IDeref(1)
-                                                };
-                                                // WARN: if install size 1, 2, 4, and 8, i fix it
+                                        match defed_typ {
+                                            DefinedTypeContent::Struct(s) => {
+                                                if let Some((mem_typ, mem_offset)) =
+                                                    s.members.get(member)
+                                                {
+                                                    let op = if mem_typ.size() == 1 {
+                                                        UnOperator::CDeref(1)
+                                                    } else {
+                                                        UnOperator::IDeref(1)
+                                                    };
+                                                    // WARN: if install size 1, 2, 4, and 8, i fix it
 
-                                                Ok((
-                                                    mem_typ.clone(),
-                                                    Exprs::Unary(Unary {
-                                                        op,
-                                                        expr: Box::new(Exprs::Binary(Binary {
-                                                            op: BinOperator::Padd,
-                                                            left: Box::new(Exprs::Primary(
-                                                                Primary::Variable(var.clone()),
-                                                            )),
-                                                            right: Box::new(Exprs::Primary(
-                                                                Primary::Literal(Literal::Int(
-                                                                    *mem_offset as i64,
+                                                    Ok((
+                                                        mem_typ.clone(),
+                                                        Exprs::Unary(Unary {
+                                                            op,
+                                                            expr: Box::new(Exprs::Binary(Binary {
+                                                                op: BinOperator::Padd,
+                                                                left: Box::new(Exprs::Primary(
+                                                                    Primary::Variable(var.clone()),
                                                                 )),
-                                                            )),
-                                                        })),
-                                                    }),
-                                                ))
-                                            } else {
-                                                Err(TypeError::StructMemberNotFound(
-                                                    i.clone(),
-                                                    member.clone(),
-                                                ))
+                                                                right: Box::new(Exprs::Primary(
+                                                                    Primary::Literal(Literal::Int(
+                                                                        *mem_offset as i64,
+                                                                    )),
+                                                                )),
+                                                            })),
+                                                        }),
+                                                    ))
+                                                } else {
+                                                    Err(TypeError::StructMemberNotFound(
+                                                        i.clone(),
+                                                        member.clone(),
+                                                    ))
+                                                }
                                             }
-                                        } else {
-                                            Err(TypeError::TypeAndOperatorNotSupported(
-                                                i.to_string(),
-                                                ".".to_string(),
-                                            ))
                                         }
                                     } else {
                                         Err(TypeError::TypeNotFound(i.clone()))

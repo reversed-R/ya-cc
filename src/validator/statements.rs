@@ -1,7 +1,6 @@
 pub mod branch_stmt;
 pub mod compound;
 pub mod loop_stmt;
-pub mod vardec_stmt;
 
 use crate::validator::{
     expressions::Exprs,

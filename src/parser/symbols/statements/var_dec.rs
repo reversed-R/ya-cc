@@ -1,4 +1,3 @@
-use std::ops::Deref;
 
 use crate::{
     lexer::token::{Token, TokenKind},

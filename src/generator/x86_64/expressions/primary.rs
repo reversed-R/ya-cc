@@ -24,9 +24,6 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
             Literal::String(s) => {
                 println!("lea rax, .L{s}[rip]");
             }
-            _ => {
-                todo!();
-            }
         },
         Primary::Variable(var) => match &var.addr {
             VarAddr::Local(offset) => {
@@ -100,7 +97,7 @@ pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::glob
             Exprs::Unary(unary) => unary::generate_as_left(unary, env),
             Exprs::Binary(bin) => binary::generate_as_left(bin, env),
         },
-        Primary::FnCall(f) => {
+        Primary::FnCall(_) => {
             todo!();
         }
         _ => {

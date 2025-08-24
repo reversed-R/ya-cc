@@ -60,7 +60,7 @@ impl Globals {
                             TokenKind::Void,
                             TokenKind::Struct,
                         ],
-                        t.clone().clone(),
+                        t.to_owned().clone(),
                     ));
                 }
             }
@@ -163,28 +163,26 @@ impl Parse for ArgsDec {
                 tokens.next();
                 return Ok(Self { args });
             } else {
-                let base: Type;
-
-                match t.kind {
+                let base: Type = match t.kind {
                     TokenKind::Int => {
                         tokens.next();
-                        base = Type::Primitive(PrimitiveType::Int);
+                        Type::Primitive(PrimitiveType::Int)
                     }
                     TokenKind::Char => {
                         tokens.next();
-                        base = Type::Primitive(PrimitiveType::Char);
+                        Type::Primitive(PrimitiveType::Char)
                     }
                     TokenKind::Void => {
                         tokens.next();
-                        base = Type::Primitive(PrimitiveType::Void);
+                        Type::Primitive(PrimitiveType::Void)
                     }
                     _ => {
                         return Err(ParseError::InvalidToken(
                             vec![TokenKind::Int, TokenKind::Char, TokenKind::Void],
-                            t.clone().clone(),
+                            t.to_owned().clone(),
                         ));
                     }
-                }
+                };
 
                 let typ = consume_scalar_type(base, tokens);
 
@@ -249,24 +247,20 @@ fn consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appea
 
             return Ok(StructType::new(name, &members));
         } else {
-            let base: Type;
-
-            match t.kind {
+            let base: Type = match t.kind {
                 TokenKind::Int => {
                     tokens.next();
-                    base = Type::Primitive(PrimitiveType::Int);
+                    Type::Primitive(PrimitiveType::Int)
                 }
                 TokenKind::Char => {
                     tokens.next();
-                    base = Type::Primitive(PrimitiveType::Char);
+                    Type::Primitive(PrimitiveType::Char)
                 }
                 TokenKind::Void => {
                     tokens.next();
-                    base = Type::Primitive(PrimitiveType::Void);
+                    Type::Primitive(PrimitiveType::Void)
                 }
-                TokenKind::Struct => {
-                    base = Type::Incomplete(consume_struct_and_name(tokens)?);
-                }
+                TokenKind::Struct => Type::Incomplete(consume_struct_and_name(tokens)?),
                 _ => {
                     return Err(ParseError::InvalidToken(
                         vec![
@@ -275,10 +269,10 @@ fn consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appea
                             TokenKind::Void,
                             TokenKind::Struct,
                         ],
-                        t.clone().clone(),
+                        t.to_owned().clone(),
                     ));
                 }
-            }
+            };
 
             let typ = consume_scalar_type(base, tokens);
 

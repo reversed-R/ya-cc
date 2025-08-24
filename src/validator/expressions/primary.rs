@@ -14,17 +14,17 @@ impl primary::Primary {
                     Type::Primitive(PrimitiveType::Int),
                     Primary::Literal(Literal::Int(*i)),
                 )),
-                primary::Literal::Float(f) => Ok((
-                    // Type::Primitive(PrimitiveType::Float),
-                    Type::Primitive(PrimitiveType::Int),
-                    Primary::Literal(Literal::Float(*f)),
-                )),
+                // primary::Literal::Float(f) => Ok((
+                //     // Type::Primitive(PrimitiveType::Float),
+                //     Type::Primitive(PrimitiveType::Int),
+                //     Primary::Literal(Literal::Float(*f)),
+                // )),
                 primary::Literal::Char(c) => Ok((
                     // Type::Primitive(PrimitiveType::Float),
                     Type::Primitive(PrimitiveType::Char),
                     Primary::Literal(Literal::Char(*c)),
                 )),
-                primary::Literal::StringLiteral(s) => {
+                primary::Literal::String(s) => {
                     if let Some(id) = env.global.string_literals.get(s) {
                         Ok((
                             Type::Array(Box::new(Type::Primitive(PrimitiveType::Char)), s.len()),

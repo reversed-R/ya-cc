@@ -18,8 +18,8 @@ pub enum Primary {
 pub enum Literal {
     Int(i64),
     Char(u8),
-    Float(f64),
-    StringLiteral(String),
+    // Float(f64),
+    String(String),
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +38,7 @@ impl Parse for Primary {
             match &t.kind {
                 TokenKind::IntLiteral(i) => Ok(Self::Literal(Literal::Int(*i))),
                 TokenKind::CharLiteral(c) => Ok(Self::Literal(Literal::Char(*c))),
-                TokenKind::StringLiteral(s) => Ok(Self::Literal(Literal::StringLiteral(s.clone()))),
+                TokenKind::StringLiteral(s) => Ok(Self::Literal(Literal::String(s.clone()))),
                 TokenKind::Identifier(s) => {
                     if let Some(t) = tokens.peek() {
                         if let TokenKind::LPare = t.kind {
@@ -89,7 +89,7 @@ impl Parse for Primary {
                                 TokenKind::Identifier("".to_string()),
                                 TokenKind::IntLiteral(0),
                             ],
-                            tokens.peek().unwrap().clone().clone(),
+                            tokens.peek().unwrap().to_owned().clone(),
                         ))
                     }
                 }

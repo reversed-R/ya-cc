@@ -15,7 +15,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
 
     #[derive(Debug)]
     enum PreToken<'src> {
-        Raw(&'src str, usize, usize),
+        Raw(&'src str, usize),
         CharLiteral(u8, usize, usize),
         StringLiteral(&'src str, usize, usize),
     }
@@ -25,7 +25,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
     while i < str.len() {
         if &str[i..i + 1] == "\'" {
             if i - raw_head > 0 {
-                pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head, i));
+                pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head));
             }
             i += 1;
 
@@ -36,8 +36,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                 if &str[iquote..iquote + 1] == "\'" {
                     raw_head = iquote + 1;
                     if iquote == i + 1 {
-                        // ISSUE: more good code ...
-                        let c: u8 = *str[i..i + 1].as_bytes().first().unwrap();
+                        let c: u8 = str[i..i + 1].parse().expect("failed to parse u8");
                         pretokens.push(PreToken::CharLiteral(c, i - 1, iquote + 1));
                         // char literal range contains single quotes before and after the character
                         i = iquote + 1;
@@ -49,9 +48,13 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
 
                 iquote += 1;
             }
+
+            if iquote >= str.len() {
+                return Err(TokenizeError::SingleQuoteCloseNotFound);
+            }
         } else if &str[i..i + 1] == "\"" {
             if i - raw_head > 0 {
-                pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head, i));
+                pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head));
             }
             i += 1;
 
@@ -69,12 +72,16 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
 
                 iquote += 1;
             }
+
+            if iquote >= str.len() {
+                return Err(TokenizeError::DoubleQuoteCloseNotFound);
+            }
         } else {
             i += 1;
         }
     }
     if i - raw_head > 0 {
-        pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head, i));
+        pretokens.push(PreToken::Raw(&str[raw_head..i], raw_head));
     }
 
     // delimiter operators
@@ -127,7 +134,7 @@ pub fn tokenize(str: &str) -> Result<Vec<Token>, TokenizeError> {
                     },
                 }]);
             }
-            PreToken::Raw(r, offset, _) => {
+            PreToken::Raw(r, offset) => {
                 let mut words: Vec<(&str, usize)> = vec![];
                 let mut begin = None;
 
@@ -280,8 +287,8 @@ fn to_tokens(str: &str, delims: &Vec<TokenKind>, offset: usize) -> Vec<Token> {
 }
 
 fn try_get_dec_int(str: &str) -> Option<TokenKind> {
-    if let Ok(dec) = usize::from_str_radix(str, 10) {
-        Some(TokenKind::IntLiteral(dec as i64))
+    if let Ok(dec) = str.parse::<i64>() {
+        Some(TokenKind::IntLiteral(dec))
     } else {
         None
     }
