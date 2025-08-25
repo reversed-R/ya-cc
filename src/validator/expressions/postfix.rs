@@ -4,12 +4,12 @@ use crate::{
     },
     validator::{
         expressions::{BinOperator, Binary, Exprs, Literal, Primary, UnOperator, Unary},
-        DefinedType, DefinedTypeContent, Env, ExprTypeValidate, Type, TypeError,
+        DefinedType, DefinedTypeContent, Env, ExprTypeValidate, Type, ValidateError,
     },
 };
 
 impl ExprTypeValidate for postfix::PostfixExpr {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), ValidateError> {
         match self {
             Self::Primary(prim) => {
                 let (mut typ, prim) = prim.validate(env)?;
@@ -25,7 +25,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                     primary::Primary::Identifier(id) => {
                         let var = env
                             .get_var(id)
-                            .ok_or(TypeError::VariableNotFound(id.clone()))?;
+                            .ok_or(ValidateError::VariableNotFound(id.clone()))?;
 
                         match &var.typ {
                             Type::Defined(defed_typ) => {
@@ -65,7 +65,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                     }),
                                                 ))
                                                     } else {
-                                                        Err(TypeError::StructMemberNotFound(
+                                                        Err(ValidateError::StructMemberNotFound(
                                                             struct_name.clone(),
                                                             member.clone(),
                                                         ))
@@ -73,12 +73,12 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                 }
                                             }
                                         } else {
-                                            Err(TypeError::TypeNotFound(struct_name.clone()))
+                                            Err(ValidateError::TypeNotFound(struct_name.clone()))
                                         }
                                     }
                                 }
                             }
-                            _ => Err(TypeError::TypeAndOperatorNotSupported(
+                            _ => Err(ValidateError::TypeAndOperatorNotSupported(
                                 var.typ.to_string(),
                                 ".".to_string(),
                             )),
@@ -125,7 +125,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                         }),
                                                     ))
                                                 } else {
-                                                    Err(TypeError::StructMemberNotFound(
+                                                    Err(ValidateError::StructMemberNotFound(
                                                         struct_name,
                                                         member.clone(),
                                                     ))
@@ -133,12 +133,12 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                             }
                                         }
                                     } else {
-                                        Err(TypeError::TypeNotFound(struct_name))
+                                        Err(ValidateError::TypeNotFound(struct_name))
                                     }
                                 }
                             }
                         } else {
-                            Err(TypeError::TypeAndOperatorNotSupported(
+                            Err(ValidateError::TypeAndOperatorNotSupported(
                                 typ.to_string(),
                                 ".".to_string(),
                             ))
@@ -187,7 +187,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                         }),
                                                     ))
                                                 } else {
-                                                    Err(TypeError::StructMemberNotFound(
+                                                    Err(ValidateError::StructMemberNotFound(
                                                         struct_name,
                                                         member.clone(),
                                                     ))
@@ -195,21 +195,23 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                             }
                                         }
                                     } else {
-                                        Err(TypeError::TypeNotFound(struct_name))
+                                        Err(ValidateError::TypeNotFound(struct_name))
                                     }
                                 }
                             }
                         } else {
-                            Err(TypeError::TypeAndOperatorNotSupported(
+                            Err(ValidateError::TypeAndOperatorNotSupported(
                                 typ.to_string(),
                                 ".".to_string(),
                             ))
                         }
                     }
-                    primary::Primary::Literal(_) => Err(TypeError::TypeAndOperatorNotSupported(
-                        "literal".to_string(),
-                        ".".to_string(),
-                    )),
+                    primary::Primary::Literal(_) => {
+                        Err(ValidateError::TypeAndOperatorNotSupported(
+                            "literal".to_string(),
+                            ".".to_string(),
+                        ))
+                    }
                 }
             }
             Self::ArrowAccess(left, member) => {
@@ -217,7 +219,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                     primary::Primary::Identifier(id) => {
                         let var = env
                             .get_var(id)
-                            .ok_or(TypeError::VariableNotFound(id.clone()))?;
+                            .ok_or(ValidateError::VariableNotFound(id.clone()))?;
 
                         if let Type::PtrTo(pointed) = &var.typ {
                             match &**pointed {
@@ -256,26 +258,30 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                                 }),
                                                             ))
                                                         } else {
-                                                            Err(TypeError::StructMemberNotFound(
-                                                                struct_name.clone(),
-                                                                member.clone(),
-                                                            ))
+                                                            Err(
+                                                                ValidateError::StructMemberNotFound(
+                                                                    struct_name.clone(),
+                                                                    member.clone(),
+                                                                ),
+                                                            )
                                                         }
                                                     }
                                                 }
                                             } else {
-                                                Err(TypeError::TypeNotFound(struct_name.clone()))
+                                                Err(ValidateError::TypeNotFound(
+                                                    struct_name.clone(),
+                                                ))
                                             }
                                         }
                                     }
                                 }
-                                _ => Err(TypeError::TypeAndOperatorNotSupported(
+                                _ => Err(ValidateError::TypeAndOperatorNotSupported(
                                     var.typ.to_string(),
                                     ".".to_string(),
                                 )),
                             }
                         } else {
-                            Err(TypeError::TypeAndOperatorNotSupported(
+                            Err(ValidateError::TypeAndOperatorNotSupported(
                                 var.typ.to_string(),
                                 ".".to_string(),
                             ))
@@ -326,7 +332,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                             }),
                                                         ))
                                                     } else {
-                                                        Err(TypeError::StructMemberNotFound(
+                                                        Err(ValidateError::StructMemberNotFound(
                                                             struct_name.clone(),
                                                             member.clone(),
                                                         ))
@@ -334,18 +340,18 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                 }
                                             }
                                         } else {
-                                            Err(TypeError::TypeNotFound(struct_name.clone()))
+                                            Err(ValidateError::TypeNotFound(struct_name.clone()))
                                         }
                                     }
                                 }
                             } else {
-                                Err(TypeError::TypeAndOperatorNotSupported(
+                                Err(ValidateError::TypeAndOperatorNotSupported(
                                     typ.to_string(),
                                     ".".to_string(),
                                 ))
                             }
                         } else {
-                            Err(TypeError::TypeAndOperatorNotSupported(
+                            Err(ValidateError::TypeAndOperatorNotSupported(
                                 typ.to_string(),
                                 ".".to_string(),
                             ))
@@ -398,7 +404,7 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                             }),
                                                         ))
                                                     } else {
-                                                        Err(TypeError::StructMemberNotFound(
+                                                        Err(ValidateError::StructMemberNotFound(
                                                             struct_name.clone(),
                                                             member.clone(),
                                                         ))
@@ -406,27 +412,29 @@ impl ExprTypeValidate for postfix::PostfixExpr {
                                                 }
                                             }
                                         } else {
-                                            Err(TypeError::TypeNotFound(struct_name.clone()))
+                                            Err(ValidateError::TypeNotFound(struct_name.clone()))
                                         }
                                     }
                                 }
                             } else {
-                                Err(TypeError::TypeAndOperatorNotSupported(
+                                Err(ValidateError::TypeAndOperatorNotSupported(
                                     typ.to_string(),
                                     ".".to_string(),
                                 ))
                             }
                         } else {
-                            Err(TypeError::TypeAndOperatorNotSupported(
+                            Err(ValidateError::TypeAndOperatorNotSupported(
                                 typ.to_string(),
                                 ".".to_string(),
                             ))
                         }
                     }
-                    primary::Primary::Literal(_) => Err(TypeError::TypeAndOperatorNotSupported(
-                        "literal".to_string(),
-                        ".".to_string(),
-                    )),
+                    primary::Primary::Literal(_) => {
+                        Err(ValidateError::TypeAndOperatorNotSupported(
+                            "literal".to_string(),
+                            ".".to_string(),
+                        ))
+                    }
                 }
             }
             Self::Index(postfix, expr) => {

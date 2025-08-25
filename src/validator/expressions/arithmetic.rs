@@ -3,12 +3,12 @@ use crate::{
     validator::{
         expressions::{BinOperator, Binary, Exprs, Literal, Primary},
         types::TypeComarison,
-        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
+        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, ValidateError,
     },
 };
 
 impl BinOperator {
-    fn from(op: &arithmetic::ArithmOperator, typ: &Type) -> Result<Self, TypeError> {
+    fn from(op: &arithmetic::ArithmOperator, typ: &Type) -> Result<Self, ValidateError> {
         match op {
             arithmetic::ArithmOperator::Add => match typ {
                 Type::Primitive(prim) => match prim {
@@ -21,7 +21,7 @@ impl BinOperator {
                 },
                 Type::PtrTo(_) => Ok(Self::Padd),
                 Type::Array(_, _) => Ok(Self::Padd), // WARN: is it true?
-                Type::Defined(d) => Err(TypeError::TypeAndOperatorNotSupported(
+                Type::Defined(d) => Err(ValidateError::TypeAndOperatorNotSupported(
                     match d {
                         DefinedType::Struct(s) => s.clone(),
                     },
@@ -40,7 +40,7 @@ impl BinOperator {
                 },
                 Type::PtrTo(_) => Ok(Self::Psub),
                 Type::Array(_, _) => Ok(Self::Psub), // WARN: is it true?
-                Type::Defined(d) => Err(TypeError::TypeAndOperatorNotSupported(
+                Type::Defined(d) => Err(ValidateError::TypeAndOperatorNotSupported(
                     match d {
                         DefinedType::Struct(s) => s.clone(),
                     },
@@ -95,7 +95,7 @@ fn get_left_and_right_if_one_is_ptr_and_the_other_is_int(
 }
 
 impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::ArithmExpr {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), ValidateError> {
         let (mut typ, left) = self.left.validate(env)?;
 
         if self.rights.is_empty() {
@@ -139,7 +139,7 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
                     });
                 }
                 TypeComarison::ImplicitlyUnconvertable => {
-                    return Err(TypeError::Mismatch(Box::new(typ), Box::new(right_typ)));
+                    return Err(ValidateError::Mismatch(Box::new(typ), Box::new(right_typ)));
                 }
             }
         }

@@ -1,6 +1,6 @@
 use crate::{
     parser::symbols::globals::FnDef,
-    validator::{statements::Stmt, Env, StmtTypeValidate, TypeError},
+    validator::{statements::Stmt, Env, ValidateError},
 };
 
 #[derive(Debug)]
@@ -13,15 +13,16 @@ pub struct Function {
 // args: Vec<Type>,
 // rtype: Type,
 
-impl StmtTypeValidate for FnDef {
-    type ValidatedType = Function;
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+impl FnDef {
+    pub fn validate(&self, env: &mut Env) -> Result<Function, ValidateError> {
         let stmts = self
             .stmts
             .iter()
             .map(|stmt| stmt.validate(env))
-            .collect::<Result<Vec<Stmt>, TypeError>>()?;
+            .collect::<Result<Vec<Option<Stmt>>, ValidateError>>()?
+            .into_iter()
+            .flatten()
+            .collect();
 
         if let Some(local) = &env.local {
             Ok(Function {
@@ -30,7 +31,7 @@ impl StmtTypeValidate for FnDef {
                 arg_count: self.args.len(),
             })
         } else {
-            Err(TypeError::OutOfScopes)
+            Err(ValidateError::OutOfScopes)
         }
     }
 }

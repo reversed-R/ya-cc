@@ -3,12 +3,12 @@ use crate::{
     validator::{
         expressions::{FnCall, Literal, Primary},
         types::TypeComarison,
-        Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
+        Env, ExprTypeValidate, PrimitiveType, Type, ValidateError,
     },
 };
 
 impl primary::Primary {
-    pub fn validate(&self, env: &mut Env) -> Result<(Type, Primary), TypeError> {
+    pub fn validate(&self, env: &mut Env) -> Result<(Type, Primary), ValidateError> {
         match self {
             Self::Literal(lit) => match lit {
                 primary::Literal::Int(i) => Ok((
@@ -44,7 +44,7 @@ impl primary::Primary {
             Self::Identifier(id) => {
                 let var = env
                     .get_var(id)
-                    .ok_or(TypeError::VariableNotFound(id.clone()))?;
+                    .ok_or(ValidateError::VariableNotFound(id.clone()))?;
 
                 Ok((var.typ.clone(), Primary::Variable(var.clone())))
             }
@@ -57,7 +57,7 @@ impl primary::Primary {
                 env.global
                     .fns
                     .get(&fcalling.name)
-                    .ok_or(TypeError::FunctionNotFound(fcalling.name.clone()))?;
+                    .ok_or(ValidateError::FunctionNotFound(fcalling.name.clone()))?;
 
                 let mut i = 0;
                 let mut args = vec![];
@@ -71,14 +71,14 @@ impl primary::Primary {
                             TypeComarison::Equal => {}
                             TypeComarison::ImplicitlyConvertableFrom => {}
                             _ => {
-                                return Err(TypeError::ArgumentMismatch(
+                                return Err(ValidateError::ArgumentMismatch(
                                     Some(Box::new(acallee.typ.clone())),
                                     Some(Box::new(acalling_typ)),
                                 ));
                             }
                         }
                     } else {
-                        return Err(TypeError::ArgumentMismatch(
+                        return Err(ValidateError::ArgumentMismatch(
                             None,
                             Some(Box::new(acalling_typ)),
                         ));
@@ -90,7 +90,7 @@ impl primary::Primary {
 
                 let fcallee = env.global.fns.get(&fcalling.name).unwrap();
                 if let Some(acallee) = fcallee.args.get(i) {
-                    Err(TypeError::ArgumentMismatch(
+                    Err(ValidateError::ArgumentMismatch(
                         Some(Box::new(acallee.typ.clone())),
                         None,
                     ))

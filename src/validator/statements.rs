@@ -1,12 +1,5 @@
-pub mod branch_stmt;
-pub mod compound;
-pub mod loop_stmt;
-
 use crate::validator::{
-    expressions::Exprs,
-    statements::{branch_stmt::BranchStmt, loop_stmt::LoopStmt},
-    types::TypeComarison,
-    Env, ExprTypeValidate, StmtTypeValidate, TypeError,
+    expressions::Exprs, types::TypeComarison, Env, ExprTypeValidate, ValidateError,
 };
 
 #[derive(Debug)]
@@ -19,10 +12,21 @@ pub enum Stmt {
     VarDec, // in codegen, variable declaration statement is nothing to do
 }
 
-impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
-    type ValidatedType = Stmt;
+#[derive(Debug)]
+pub struct BranchStmt {
+    pub cond: Exprs,
+    pub then: Stmt,
+    pub els: Option<Stmt>,
+}
 
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError> {
+#[derive(Debug)]
+pub struct LoopStmt {
+    pub cond: Exprs,
+    pub stmt: Stmt,
+}
+
+impl crate::parser::symbols::statements::Stmt {
+    pub fn validate(&self, env: &mut Env) -> Result<Option<Stmt>, ValidateError> {
         match self {
             Self::Block(stmts) => {
                 env.begin_scope();
@@ -30,35 +34,50 @@ impl StmtTypeValidate for crate::parser::symbols::statements::Stmt {
                 let stmts = stmts
                     .iter()
                     .map(|stmt| stmt.validate(env))
-                    .collect::<Result<Vec<Stmt>, TypeError>>()?;
+                    .collect::<Result<Vec<Option<Stmt>>, ValidateError>>()?
+                    .into_iter()
+                    .flatten()
+                    .collect();
 
                 env.end_scope();
 
-                Ok(Stmt::Compound(stmts))
+                Ok(Some(Stmt::Compound(stmts)))
             }
-            Self::Expr(expr) => Ok(Stmt::Expr(expr.validate(env)?.1)),
+            Self::Expr(expr) => Ok(Some(Stmt::Expr(expr.validate(env)?.1))),
             Self::Return(expr) => {
                 let (expr_typ, expr) = expr.validate(env)?;
 
                 if let Some(local) = &env.local {
                     match local.rtype.compare(&expr_typ) {
-                        TypeComarison::Equal => Ok(Stmt::Return(expr)),
-                        TypeComarison::ImplicitlyConvertableFrom => Ok(Stmt::Return(expr)),
-                        _ => Err(TypeError::Mismatch(
+                        TypeComarison::Equal => Ok(Some(Stmt::Return(expr))),
+                        TypeComarison::ImplicitlyConvertableFrom => Ok(Some(Stmt::Return(expr))),
+                        _ => Err(ValidateError::Mismatch(
                             Box::new(local.rtype.clone()),
                             Box::new(expr_typ),
                         )),
                     }
                 } else {
-                    Err(TypeError::OutOfScopes)
+                    Err(ValidateError::OutOfScopes)
                 }
             }
-            Self::If(if_stmt) => Ok(Stmt::Branch(Box::new(if_stmt.validate(env)?))),
-            Self::While(while_stmt) => Ok(Stmt::Loop(Box::new(while_stmt.validate(env)?))),
+            Self::If(if_stmt) => Ok(Some(Stmt::Branch(Box::new(BranchStmt {
+                cond: if_stmt.cond.validate(env)?.1,
+                then: if_stmt.then.validate(env)?.expect("error"),
+                els: if_stmt
+                    .els
+                    .as_ref()
+                    .map(|els| els.validate(env))
+                    .transpose()?
+                    .flatten(),
+            })))),
+            Self::While(while_stmt) => Ok(Some(Stmt::Loop(Box::new(LoopStmt {
+                cond: while_stmt.cond.validate(env)?.1,
+                stmt: while_stmt.stmt.validate(env)?.expect("error"),
+            })))),
             Self::VarDec(var) => {
                 env.insert_var(var.name.clone(), var.typ.clone())?;
 
-                Ok(Stmt::VarDec)
+                Ok(None)
 
                 // TODO:
                 // when support initialization, must validate type

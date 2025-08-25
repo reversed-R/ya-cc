@@ -2,7 +2,7 @@ use crate::{
     parser::symbols::expressions::unary,
     validator::{
         expressions::{Exprs, Literal, Primary, UnOperator, Unary},
-        Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
+        Env, ExprTypeValidate, PrimitiveType, Type, ValidateError,
     },
 };
 
@@ -17,7 +17,7 @@ impl From<&unary::UnaryOperator> for Option<UnOperator> {
 }
 
 impl ExprTypeValidate for unary::Unary {
-    fn validate(&self, env: &mut Env) -> Result<(Type, super::Exprs), TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, super::Exprs), ValidateError> {
         let (mut typ, mut right) = self.right.right.validate(env)?;
         let mut ref_count: isize = 0;
 
@@ -32,7 +32,7 @@ impl ExprTypeValidate for unary::Unary {
                         typ = deref;
                         ref_count += 1;
                     } else {
-                        return Err(TypeError::DerefNotAllowed(typ));
+                        return Err(ValidateError::DerefNotAllowed(typ));
                     }
                 }
             }
@@ -62,16 +62,16 @@ impl ExprTypeValidate for unary::Unary {
                         refop = UnOperator::IDeref(ref_count as usize);
                     }
                     _ => {
-                        return Err(TypeError::DerefNotAllowed(typ));
+                        return Err(ValidateError::DerefNotAllowed(typ));
                     }
                 }
             } else {
-                return Err(TypeError::DerefNotAllowed(typ));
+                return Err(ValidateError::DerefNotAllowed(typ));
             }
         } else if ref_count == -1 {
             refop = UnOperator::Ref;
         } else {
-            return Err(TypeError::DerefNotAllowed(typ));
+            return Err(ValidateError::DerefNotAllowed(typ));
         }
 
         let is_neg: bool;

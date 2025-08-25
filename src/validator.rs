@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeError> {
+pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, ValidateError> {
     let mut env = Env::new();
     let mut fns = HashMap::new();
     let mut global_vars = HashMap::new();
@@ -95,7 +95,7 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                                 max_align = mem_typ.align(&env);
                             }
                         } else {
-                            return Err(TypeError::StructMemberConflict(
+                            return Err(ValidateError::StructMemberConflict(
                                 s.name.clone(),
                                 mem_name.clone(),
                             ));
@@ -112,7 +112,7 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                             }),
                         );
                     } else {
-                        return Err(TypeError::TypeConflict(s.name.clone()));
+                        return Err(ValidateError::TypeConflict(s.name.clone()));
                     }
                 }
             },
@@ -127,20 +127,25 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
 }
 
 #[derive(Debug)]
-pub enum TypeError {
+pub enum ValidateError {
+    // something not found
     VariableNotFound(String),
     FunctionNotFound(String),
     TypeNotFound(String),
     StructMemberNotFound(String, String), // struct name, member string
+    // something conflict
     VariableConflict(String),
-    OutOfScopes,
+    StructMemberConflict(String, String), // struct name, member string
+    TypeConflict(String),
+    // type mismatch
     ArgumentMismatch(Option<Box<Type>>, Option<Box<Type>>), // callee type, calling type
     Mismatch(Box<Type>, Box<Type>),                         // outer type, inner type
+    // operation not allowed for the type
     DerefNotAllowed(Type),
     StructNotAssignable(String),                 // struct name
     TypeAndOperatorNotSupported(String, String), // type name, op string
-    StructMemberConflict(String, String),        // struct name, member string
-    TypeConflict(String),
+    // validator bug
+    OutOfScopes,
 }
 
 #[derive(Debug)]
@@ -150,14 +155,8 @@ pub struct Program {
     pub global_vars: HashMap<String, Variable>,
 }
 
-pub trait StmtTypeValidate {
-    type ValidatedType;
-
-    fn validate(&self, env: &mut Env) -> Result<Self::ValidatedType, TypeError>;
-}
-
 pub trait ExprTypeValidate {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError>;
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), ValidateError>;
 }
 
 #[derive(Debug)]
@@ -216,10 +215,10 @@ impl<'parsed> Env<'parsed> {
         for arg in args {
             if let Err(e) = self.insert_var(arg.name.clone(), arg.typ.clone()) {
                 match e {
-                    TypeError::OutOfScopes => {
+                    ValidateError::OutOfScopes => {
                         panic!("Compiler Error, Out of Scopes");
                     }
-                    TypeError::VariableConflict(var) => {
+                    ValidateError::VariableConflict(var) => {
                         panic!("Function Arg Name Conflicting: {var}");
                     }
                     _ => {
@@ -250,7 +249,7 @@ impl<'parsed> Env<'parsed> {
         }
     }
 
-    pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
+    pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), ValidateError> {
         let offset =
             (self.get_local_varsize_sum() + typ.size(self)).next_multiple_of(typ.align(self));
 
@@ -270,13 +269,13 @@ impl<'parsed> Env<'parsed> {
                         Ok(())
                     }
 
-                    Entry::Occupied(_) => Err(TypeError::VariableConflict(var)),
+                    Entry::Occupied(_) => Err(ValidateError::VariableConflict(var)),
                 }
             } else {
-                Err(TypeError::OutOfScopes)
+                Err(ValidateError::OutOfScopes)
             }
         } else {
-            Err(TypeError::OutOfScopes)
+            Err(ValidateError::OutOfScopes)
         }
     }
 
@@ -332,7 +331,7 @@ impl<'fndec> From<&'fndec FnDef> for FnSignature<'fndec> {
     }
 }
 
-impl TypeError {
+impl ValidateError {
     pub fn panic_with_error_message(&self) -> ! {
         eprint!("\x1b[1;38;2;255;20;0merror\x1b[m: ");
         eprint!("\x1b[1m");

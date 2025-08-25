@@ -1,6 +1,4 @@
-use crate::{
-    generator::x86_64::globals::LocalGenerate, validator::statements::branch_stmt::BranchStmt,
-};
+use crate::{generator::x86_64::globals::LocalGenerate, validator::statements::BranchStmt};
 
 impl LocalGenerate for BranchStmt {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {

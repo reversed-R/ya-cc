@@ -2,7 +2,7 @@ use crate::{
     parser::symbols::expressions::relational,
     validator::{
         expressions::{BinOperator, Binary, Exprs},
-        Env, ExprTypeValidate, Type, TypeError,
+        Env, ExprTypeValidate, Type, ValidateError,
     },
 };
 
@@ -18,7 +18,7 @@ impl From<&relational::RelationalOperator> for BinOperator {
 }
 
 impl ExprTypeValidate for relational::RelationalExpr {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), ValidateError> {
         let (typ, left) = self.left.validate(env)?;
 
         if self.rights.is_empty() {
@@ -31,7 +31,7 @@ impl ExprTypeValidate for relational::RelationalExpr {
             let (right_typ, right) = r.right.validate(env)?;
 
             if !typ.equals(&right_typ) {
-                return Err(TypeError::Mismatch(Box::new(typ), Box::new(right_typ)));
+                return Err(ValidateError::Mismatch(Box::new(typ), Box::new(right_typ)));
             }
 
             expr = Exprs::Binary(Binary {

@@ -2,12 +2,15 @@ use crate::{
     parser::symbols::expressions::assignment,
     validator::{
         expressions::{BinOperator, Binary, Exprs, Literal, Primary, UnOperator},
-        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
+        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, ValidateError,
     },
 };
 
 impl BinOperator {
-    fn from_assignop(value: &assignment::AssignOperator, typ: &Type) -> Result<Self, TypeError> {
+    fn from_assignop(
+        value: &assignment::AssignOperator,
+        typ: &Type,
+    ) -> Result<Self, ValidateError> {
         match value {
             assignment::AssignOperator::Assign => match typ {
                 Type::Primitive(p) => match p {
@@ -17,7 +20,7 @@ impl BinOperator {
                 },
                 Type::PtrTo(_) => Ok(Self::PAssign),
                 Type::Array(_, _) => Ok(Self::PAssign), // WARN: is it true?
-                Type::Defined(d) => Err(TypeError::StructNotAssignable(match d {
+                Type::Defined(d) => Err(ValidateError::StructNotAssignable(match d {
                     DefinedType::Struct(s) => s.clone(),
                 })),
                 // WARN: if i implement enum, i fix it
@@ -55,7 +58,7 @@ fn is_numeric_zero(src: &Exprs) -> bool {
 }
 
 impl ExprTypeValidate for assignment::AssignExpr {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), ValidateError> {
         let (src_typ, mut src) = self.right.validate(env)?;
 
         if self.lefts.is_empty() {
@@ -75,7 +78,7 @@ impl ExprTypeValidate for assignment::AssignExpr {
             {
                 typ = dst_typ;
             } else {
-                return Err(TypeError::Mismatch(Box::new(dst_typ), Box::new(typ)));
+                return Err(ValidateError::Mismatch(Box::new(dst_typ), Box::new(typ)));
             }
 
             src = Exprs::Binary(Binary {

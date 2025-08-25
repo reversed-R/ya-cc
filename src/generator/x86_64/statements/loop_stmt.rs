@@ -1,6 +1,4 @@
-use crate::{
-    generator::x86_64::globals::LocalGenerate, validator::statements::loop_stmt::LoopStmt,
-};
+use crate::{generator::x86_64::globals::LocalGenerate, validator::statements::LoopStmt};
 
 impl LocalGenerate for LoopStmt {
     fn generate(&self, env: &mut crate::generator::x86_64::globals::Env) {

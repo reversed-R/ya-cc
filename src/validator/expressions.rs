@@ -7,7 +7,7 @@ pub mod primary;
 pub mod relational;
 pub mod unary;
 
-use crate::validator::{Env, ExprTypeValidate, Type, TypeError, Variable};
+use crate::validator::{Env, ExprTypeValidate, Type, ValidateError, Variable};
 
 #[derive(Debug, Clone)]
 pub enum Primary {
@@ -80,7 +80,7 @@ pub enum UnOperator {
 }
 
 impl ExprTypeValidate for crate::parser::symbols::expressions::Expr {
-    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), TypeError> {
+    fn validate(&self, env: &mut Env) -> Result<(Type, Exprs), ValidateError> {
         self.0.validate(env)
     }
 }
