@@ -2,7 +2,7 @@ use crate::{
     parser::symbols::expressions::assignment,
     validator::{
         expressions::{BinOperator, Binary, Exprs, Literal, Primary, UnOperator},
-        Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
+        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
 
@@ -17,8 +17,9 @@ impl BinOperator {
                 },
                 Type::PtrTo(_) => Ok(Self::PAssign),
                 Type::Array(_, _) => Ok(Self::PAssign), // WARN: is it true?
-                Type::Struct(s) => Err(TypeError::StructNotAssignable(s.name.clone())),
-                Type::Incomplete(i) => Err(TypeError::StructNotAssignable(i.clone())),
+                Type::Defined(d) => Err(TypeError::StructNotAssignable(match d {
+                    DefinedType::Struct(s) => s.clone(),
+                })),
                 // WARN: if i implement enum, i fix it
             },
         }

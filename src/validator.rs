@@ -21,16 +21,36 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
     // ISSUE:
     // 現在の実装ではEnvの初期化時にグローバルから見える変数、関数宣言、定義、型定義を総なめしている
     // 実際のCでは上から発見し次第存在するものとなるが、今の実装のほうが便利なので良いかあ〜、と思ったり...
-    let mut env = Env::new(&prog.globals)?;
+    let mut env = Env::new();
     let mut fns = HashMap::new();
     let mut global_vars = HashMap::new();
 
     for g in &prog.globals {
         match g {
-            symbols::globals::Globals::FnDeclare(_) => {
-                // nothing to do
+            symbols::globals::Globals::FnDeclare(f) => {
+                if !env.global.fns.contains_key(&f.name) {
+                    env.global.fns.insert(
+                        f.name.clone(),
+                        FnSignature {
+                            args: &f.args,
+                            rtype: &f.rtype,
+                        },
+                    );
+                }
             }
             symbols::globals::Globals::FnDef(f) => {
+                // insert f to env function signature list
+                if !env.global.fns.contains_key(&f.name) {
+                    env.global.fns.insert(
+                        f.name.clone(),
+                        FnSignature {
+                            args: &f.args,
+                            rtype: &f.rtype,
+                        },
+                    );
+                }
+
+                // for next codegen path, validate function body
                 env.begin_local(&f.args, &f.rtype);
 
                 fns.insert(f.name.clone(), f.validate(&mut env)?);
@@ -38,17 +58,63 @@ pub fn validate(prog: &crate::parser::symbols::Program) -> Result<Program, TypeE
                 env.end_local();
             }
             symbols::globals::Globals::VarDec(v) => {
+                // insert variable to env global variable list
+                env.global.vars.insert(
+                    v.name.clone(),
+                    Variable {
+                        typ: v.typ.clone(),
+                        addr: VarAddr::Global(v.name.clone(), v.typ.size(&env)),
+                    },
+                );
+
+                // for next codegen path, insert var
                 global_vars.insert(
                     v.name.clone(),
                     Variable {
                         typ: v.typ.clone(),
-                        addr: VarAddr::Global(v.name.clone()),
+                        addr: VarAddr::Global(v.name.clone(), v.typ.size(&env)),
                     },
                 );
             }
-            symbols::globals::Globals::TypeDef(_) => {
-                // nothing to do
-            }
+            symbols::globals::Globals::TypeDef(t) => match t {
+                TypeDef::Struct(s) => {
+                    let mut members = HashMap::new();
+                    let mut offset = 0usize;
+                    let mut max_align = 0usize;
+
+                    for (mem_typ, mem_name) in &s.members {
+                        if !members.contains_key(mem_name) {
+                            offset = offset.next_multiple_of(mem_typ.align(&env));
+
+                            members.insert(mem_name.clone(), (mem_typ.clone(), offset));
+
+                            offset += mem_typ.size(&env);
+
+                            if max_align < mem_typ.align(&env) {
+                                max_align = mem_typ.align(&env);
+                            }
+                        } else {
+                            return Err(TypeError::StructMemberConflict(
+                                s.name.clone(),
+                                mem_name.clone(),
+                            ));
+                        }
+                    }
+
+                    if !env.global.types.contains_key(&s.name) {
+                        env.global.types.insert(
+                            s.name.clone(),
+                            DefinedTypeContent::Struct(StructContent {
+                                members,
+                                size: offset.next_multiple_of(max_align),
+                                align: max_align,
+                            }),
+                        );
+                    } else {
+                        return Err(TypeError::TypeConflict(s.name.clone()));
+                    }
+                }
+            },
         }
     }
 
@@ -120,90 +186,55 @@ pub struct StructContent {
 }
 
 #[derive(Debug, Clone)]
-pub struct StructMember {
-    pub typ: Type,
-    pub name: String,
-    pub offset: usize,
-}
-
-#[derive(Debug, Clone)]
-pub struct StructType {
-    pub name: String,
-    pub members: Vec<StructMember>,
-    size: usize,
-    align: usize,
-}
-
-impl StructType {
-    pub fn new(name: String, mems: &[(Type, String)]) -> Self {
-        let mut offset = 0usize;
-        let mut members: Vec<StructMember> = vec![];
-        let mut max_align = 0usize;
-
-        for (typ, name) in mems {
-            // TODO: detect member name confiliction
-            offset = offset.next_multiple_of(typ.align());
-            members.push(StructMember {
-                typ: typ.clone(),
-                name: name.clone(),
-                offset,
-            });
-
-            offset += typ.size();
-
-            if max_align < typ.align() {
-                max_align = typ.align();
-            }
-        }
-
-        Self {
-            name,
-            members,
-            size: offset.next_multiple_of(max_align),
-            align: max_align,
-        }
-    }
-
-    pub fn size(&self) -> usize {
-        self.size
-    }
-
-    pub fn align(&self) -> usize {
-        self.align
-    }
-
-    pub fn get_member(&self, member: &str) -> Option<&StructMember> {
-        self.members.iter().find(|mem| mem.name == member)
-    }
-}
-
-#[derive(Debug, Clone)]
 pub enum Type {
     Primitive(PrimitiveType),
     PtrTo(Box<Type>),
     Array(Box<Type>, usize),
-    Struct(StructType),
-    Incomplete(String),
+    Defined(DefinedType),
+}
+
+#[derive(Debug, Clone)]
+pub enum DefinedType {
+    Struct(String),
+    // TypeDefed(String),
 }
 
 impl Type {
-    pub fn size(&self) -> usize {
+    pub fn size(&self, env: &Env) -> usize {
         match self {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.size(),
-            Self::Array(typ, size) => typ.size() * size,
-            Self::Struct(s) => s.size(),
-            Self::Incomplete(_) => 0, // ISSUE: size unknown
+            Self::Array(typ, size) => typ.size(env) * size,
+            Self::Defined(defed_type_id) => match defed_type_id {
+                DefinedType::Struct(s) => {
+                    if let Some(defed_typ) = env.global.types.get(s) {
+                        match defed_typ {
+                            DefinedTypeContent::Struct(s) => s.size,
+                        }
+                    } else {
+                        panic!("Type Not Found `struct {s}`");
+                    }
+                }
+            },
         }
     }
 
-    pub fn align(&self) -> usize {
+    pub fn align(&self, env: &Env) -> usize {
         match self {
             Self::PtrTo(_) => 8,
             Self::Primitive(p) => p.align(),
-            Self::Array(typ, _) => typ.align(),
-            Self::Struct(s) => s.align(),
-            Self::Incomplete(_) => 0, // ISSUE: align unknown
+            Self::Array(typ, _) => typ.align(env),
+            Self::Defined(defed_type_id) => match defed_type_id {
+                DefinedType::Struct(s) => {
+                    if let Some(defed_typ) = env.global.types.get(s) {
+                        match defed_typ {
+                            DefinedTypeContent::Struct(s) => s.align,
+                        }
+                    } else {
+                        panic!("Type Not Found `struct {s}`");
+                    }
+                }
+            },
         }
     }
 
@@ -242,8 +273,7 @@ impl Type {
                     }
                 }
                 Self::Array(_, _) => TypeComarison::ImplicitlyUnconvertable,
-                Self::Struct(_) => TypeComarison::ImplicitlyUnconvertable,
-                Self::Incomplete(_) => TypeComarison::ImplicitlyUnconvertable,
+                Self::Defined(_) => TypeComarison::ImplicitlyUnconvertable,
             },
             Self::PtrTo(pointed) => match other {
                 Self::Primitive(other_prim) => match other_prim {
@@ -274,12 +304,10 @@ impl Type {
                         TypeComarison::ImplicitlyUnconvertable
                     }
                 }
-                Self::Struct(_) => TypeComarison::ImplicitlyUnconvertable,
-                Self::Incomplete(_) => TypeComarison::ImplicitlyUnconvertable,
+                Self::Defined(_) => TypeComarison::ImplicitlyUnconvertable,
             },
             Self::Array(atyp, _) => Self::PtrTo(Box::new(*atyp.clone())).compare(other),
-            Self::Struct(_) => TypeComarison::ImplicitlyUnconvertable,
-            Self::Incomplete(_) => TypeComarison::ImplicitlyUnconvertable,
+            Self::Defined(_) => TypeComarison::ImplicitlyUnconvertable,
         }
     }
 
@@ -294,17 +322,12 @@ impl Type {
                 _ => false,
             },
             Self::Array(_, _) => false,
-            Self::Struct(s) => {
-                if let Self::Struct(other_s) = other {
-                    // ISSUE: struct names must guarantee not conflicting
-                    s.name == other_s.name
-                } else {
-                    false
-                }
-            }
-            Self::Incomplete(name) => match other {
-                Self::Struct(s) => name == &s.name,
-                Self::Incomplete(other_name) => name == other_name,
+            Self::Defined(defed_typ) => match other {
+                Self::Defined(other_defed_typ) => match defed_typ {
+                    DefinedType::Struct(s) => match other_defed_typ {
+                        DefinedType::Struct(other_s) => s == other_s,
+                    },
+                },
                 _ => false,
             },
         }
@@ -334,12 +357,7 @@ impl Type {
                         // NOTE:
                         // atyp..get_ptr_base()
                     }
-                    Self::Struct(_) => {
-                        None
-                        // NOTE:
-                        // Some(s.clone())
-                    }
-                    Self::Incomplete(_) => None,
+                    Self::Defined(_) => None,
                 }
             }
             Self::Array(_, _) => {
@@ -347,8 +365,7 @@ impl Type {
                 // NOTE:
                 // atyp.get_ptr_base()
             }
-            Self::Struct(s) => Some(Self::Struct(s.clone())),
-            Self::Incomplete(i) => Some(Self::Incomplete(i.clone())),
+            Self::Defined(d) => Some(Self::Defined(d.clone())),
         }
     }
 }
@@ -397,81 +414,16 @@ struct EnvLocal {
 }
 
 impl<'parsed> Env<'parsed> {
-    fn new(globals: &'parsed [symbols::globals::Globals]) -> Result<Self, TypeError> {
-        let mut fns = HashMap::<String, FnSignature>::new();
-        let mut vars = HashMap::new();
-        let mut types = HashMap::new();
-
-        for g in globals {
-            match g {
-                symbols::globals::Globals::FnDef(f) => {
-                    if !fns.contains_key(&f.name) {
-                        fns.insert(f.name.clone(), FnSignature::from(f));
-                    }
-                }
-                symbols::globals::Globals::VarDec(v) => {
-                    if !vars.contains_key(&v.name) {
-                        vars.insert(
-                            v.name.clone(),
-                            Variable {
-                                typ: v.typ.clone(),
-                                addr: VarAddr::Global(v.name.clone()),
-                            },
-                        );
-                    }
-                }
-                symbols::globals::Globals::FnDeclare(f) => {
-                    if !fns.contains_key(&f.name) {
-                        fns.insert(
-                            f.name.clone(),
-                            FnSignature {
-                                args: &f.args,
-                                rtype: &f.rtype,
-                            },
-                        );
-                    }
-                }
-                symbols::globals::Globals::TypeDef(t) => match t {
-                    TypeDef::Struct(s) => {
-                        let mut members = HashMap::new();
-
-                        for mem in &s.members {
-                            if !members.contains_key(&mem.name) {
-                                members.insert(mem.name.clone(), (mem.typ.clone(), mem.offset));
-                            } else {
-                                return Err(TypeError::StructMemberConflict(
-                                    s.name.clone(),
-                                    mem.name.clone(),
-                                ));
-                            }
-                        }
-
-                        if !types.contains_key(&s.name) {
-                            types.insert(
-                                s.name.clone(),
-                                DefinedTypeContent::Struct(StructContent {
-                                    members,
-                                    size: s.size,
-                                    align: s.align,
-                                }),
-                            );
-                        } else {
-                            return Err(TypeError::TypeConflict(s.name.clone()));
-                        }
-                    }
-                },
-            }
-        }
-
-        Ok(Self {
+    fn new() -> Self {
+        Self {
             global: EnvGlobal {
-                fns,
-                vars,
-                types,
+                fns: HashMap::new(),
+                vars: HashMap::new(),
+                types: HashMap::new(),
                 string_literals: HashMap::new(),
             },
             local: None,
-        })
+        }
     }
 
     fn begin_local(&mut self, args: &[VarDec], rtype: &Type) {
@@ -519,19 +471,8 @@ impl<'parsed> Env<'parsed> {
     }
 
     pub fn insert_var(&mut self, var: String, typ: Type) -> Result<(), TypeError> {
-        let offset = if let Type::Incomplete(i) = &typ {
-            if let Some(defed_typ) = self.global.types.get(i) {
-                match defed_typ {
-                    DefinedTypeContent::Struct(s) => {
-                        (self.get_local_varsize_sum() + s.size).next_multiple_of(s.align)
-                    }
-                }
-            } else {
-                return Err(TypeError::TypeNotFound(i.clone()));
-            }
-        } else {
-            (self.get_local_varsize_sum() + typ.size()).next_multiple_of(typ.align())
-        };
+        let offset =
+            (self.get_local_varsize_sum() + typ.size(self)).next_multiple_of(typ.align(self));
 
         if let Some(local) = &mut self.local {
             if let Some(last_scope) = local.vars.last_mut() {
@@ -576,24 +517,7 @@ impl<'parsed> Env<'parsed> {
             local
                 .vars
                 .iter()
-                .map(|scope| {
-                    scope
-                        .values()
-                        .map(|v| {
-                            if let Type::Incomplete(i) = &v.typ {
-                                if let Some(defed_typ) = self.global.types.get(i) {
-                                    match defed_typ {
-                                        DefinedTypeContent::Struct(s) => s.size,
-                                    }
-                                } else {
-                                    panic!("Unknown Type");
-                                }
-                            } else {
-                                v.typ.size()
-                            }
-                        })
-                        .sum::<usize>()
-                })
+                .map(|scope| scope.values().map(|v| v.typ.size(self)).sum::<usize>())
                 .sum::<usize>()
         } else {
             0
@@ -603,8 +527,8 @@ impl<'parsed> Env<'parsed> {
 
 #[derive(Debug, Clone)]
 pub enum VarAddr {
-    Local(usize),   // basepointer + offset
-    Global(String), //
+    Local(usize),          // basepointer + offset
+    Global(String, usize), // label name, byte size
 }
 
 #[derive(Debug, Clone)]
@@ -700,8 +624,9 @@ impl Display for Type {
                 PrimitiveType::Void => write!(f, "void"),
             },
             Self::Array(typ, size) => write!(f, "{typ}[{size}]"),
-            Self::Struct(s) => write!(f, "struct {}", s.name),
-            Self::Incomplete(i) => write!(f, "{i}"),
+            Self::Defined(defed_type_id) => match defed_type_id {
+                DefinedType::Struct(s) => write!(f, "struct {s}"),
+            },
         }
     }
 }

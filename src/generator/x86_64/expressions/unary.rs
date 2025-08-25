@@ -25,7 +25,7 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
                         println!("mov rax, rbp");
                         println!("sub rax, {offset}");
                     }
-                    VarAddr::Global(label) => {
+                    VarAddr::Global(label, _) => {
                         println!("lea rax, {label}[rip]");
                     }
                 }
@@ -36,7 +36,7 @@ pub fn generate(unary: &Unary, env: &mut crate::generator::x86_64::globals::Env)
                             println!("mov rax, rbp");
                             println!("sub rax, {offset}");
                         }
-                        VarAddr::Global(label) => {
+                        VarAddr::Global(label, _) => {
                             println!("lea rax, {label}[rip]");
                         }
                     }

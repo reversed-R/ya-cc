@@ -2,7 +2,7 @@ use crate::{
     parser::symbols::expressions::arithmetic,
     validator::{
         expressions::{BinOperator, Binary, Exprs, Literal, Primary},
-        Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
+        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
     },
 };
 
@@ -20,12 +20,10 @@ impl BinOperator {
                 },
                 Type::PtrTo(_) => Ok(Self::Padd),
                 Type::Array(_, _) => Ok(Self::Padd), // WARN: is it true?
-                Type::Struct(s) => Err(TypeError::TypeAndOperatorNotSupported(
-                    s.name.clone(),
-                    "+".to_string(),
-                )),
-                Type::Incomplete(i) => Err(TypeError::TypeAndOperatorNotSupported(
-                    i.clone(),
+                Type::Defined(d) => Err(TypeError::TypeAndOperatorNotSupported(
+                    match d {
+                        DefinedType::Struct(s) => s.clone(),
+                    },
                     "+".to_string(),
                 )),
                 // WARN: if i implement enum, i fix it
@@ -41,12 +39,10 @@ impl BinOperator {
                 },
                 Type::PtrTo(_) => Ok(Self::Psub),
                 Type::Array(_, _) => Ok(Self::Psub), // WARN: is it true?
-                Type::Struct(s) => Err(TypeError::TypeAndOperatorNotSupported(
-                    s.name.clone(),
-                    "-".to_string(),
-                )),
-                Type::Incomplete(i) => Err(TypeError::TypeAndOperatorNotSupported(
-                    i.clone(),
+                Type::Defined(d) => Err(TypeError::TypeAndOperatorNotSupported(
+                    match d {
+                        DefinedType::Struct(s) => s.clone(),
+                    },
                     "-".to_string(),
                 )),
                 // WARN: if i implement enum, i fix it
@@ -60,6 +56,7 @@ fn get_left_and_right_if_one_is_ptr_and_the_other_is_int(
     left_typ: &Type,
     right: &Exprs,
     right_typ: &Type,
+    env: &Env,
 ) -> Option<(Exprs, Exprs)> {
     if matches!(left_typ, Type::Primitive(PrimitiveType::Int)) {
         if let Type::PtrTo(pointed) = right_typ {
@@ -69,7 +66,7 @@ fn get_left_and_right_if_one_is_ptr_and_the_other_is_int(
                     op: BinOperator::Imul,
                     left: Box::new(left.clone()),
                     right: Box::new(Exprs::Primary(Primary::Literal(Literal::Int(
-                        pointed.size() as i64,
+                        pointed.size(env) as i64,
                     )))),
                 }),
             ))
@@ -84,7 +81,7 @@ fn get_left_and_right_if_one_is_ptr_and_the_other_is_int(
                     op: BinOperator::Imul,
                     left: Box::new(right.clone()),
                     right: Box::new(Exprs::Primary(Primary::Literal(Literal::Int(
-                        pointed.size() as i64,
+                        pointed.size(env) as i64,
                     )))),
                 }),
             ))
@@ -110,7 +107,7 @@ impl ExprTypeValidate for crate::parser::symbols::expressions::arithmetic::Arith
             let (right_typ, mut right) = r.right.validate(env)?;
 
             if let Some((l, r)) = get_left_and_right_if_one_is_ptr_and_the_other_is_int(
-                &expr, &typ, &right, &right_typ,
+                &expr, &typ, &right, &right_typ, env,
             ) {
                 expr = l;
                 right = r;

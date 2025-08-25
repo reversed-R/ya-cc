@@ -1,8 +1,7 @@
-
 use crate::{
     lexer::token::{Token, TokenKind},
     parser::{matches, symbols::globals::consume_struct_and_name, Parse, ParseError},
-    validator::{PrimitiveType, Type},
+    validator::{DefinedType, PrimitiveType, Type},
 };
 
 #[derive(Debug, Clone)]
@@ -30,7 +29,7 @@ impl Parse for VarDec {
                     base = Type::Primitive(PrimitiveType::Char);
                 }
                 TokenKind::Struct => {
-                    base = Type::Incomplete(consume_struct_and_name(tokens)?);
+                    base = Type::Defined(DefinedType::Struct(consume_struct_and_name(tokens)?));
                 }
                 _ => {
                     return Err(ParseError::InvalidToken(

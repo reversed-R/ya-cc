@@ -23,9 +23,9 @@ pub fn generate(prog: &Program) {
     if !prog.global_vars.is_empty() {
         println!(".data");
         for var in prog.global_vars.values() {
-            if let VarAddr::Global(g) = &var.addr {
-                println!("{g}:");
-                println!("  .zero {}", var.typ.size());
+            if let VarAddr::Global(label, size) = &var.addr {
+                println!("{label}:");
+                println!("  .zero {size}");
             } else {
                 panic!("Invalid Global Variable");
             }

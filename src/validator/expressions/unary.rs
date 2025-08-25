@@ -57,11 +57,7 @@ impl ExprTypeValidate for unary::Unary {
                             }
                         }
                     }
-                    Type::Struct(_) => {
-                        // WARN: PDeref
-                        refop = UnOperator::IDeref(ref_count as usize);
-                    }
-                    Type::Incomplete(_) => {
+                    Type::Defined(_) => {
                         // WARN: PDeref
                         refop = UnOperator::IDeref(ref_count as usize);
                     }
@@ -84,7 +80,7 @@ impl ExprTypeValidate for unary::Unary {
             unary::UnaryOperator::SizeOf => {
                 is_neg = false;
                 typ = Type::Primitive(PrimitiveType::Int);
-                right = Exprs::Primary(Primary::Literal(Literal::Int(typ.size() as i64)));
+                right = Exprs::Primary(Primary::Literal(Literal::Int(typ.size(env) as i64)));
             }
             unary::UnaryOperator::Plus => {
                 is_neg = false;

@@ -34,7 +34,7 @@ pub fn generate(prim: &Primary, env: &mut crate::generator::x86_64::globals::Env
                     println!("mov rax, [rbp - {offset}]");
                 }
             }
-            VarAddr::Global(label) => {
+            VarAddr::Global(label, _) => {
                 println!("mov rax, QWORD PTR {label}[rip]");
             }
         },
@@ -87,7 +87,7 @@ pub fn generate_as_left(prim: &Primary, env: &mut crate::generator::x86_64::glob
                 println!("sub rax, {offset}");
                 0
             }
-            VarAddr::Global(label) => {
+            VarAddr::Global(label, _) => {
                 println!("lea rax, {label}[rip]");
                 0
             }

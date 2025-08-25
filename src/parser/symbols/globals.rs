@@ -2,13 +2,29 @@ use crate::{
     lexer::token::{Token, TokenKind},
     parser::{
         matches,
-        symbols::statements::var_dec::{consume_scalar_type, VarDec},
+        symbols::statements::{
+            block::BlockStmt,
+            var_dec::{consume_scalar_type, VarDec},
+            Stmt,
+        },
         Parse, ParseError,
     },
-    validator::{PrimitiveType, StructType, Type},
+    validator::{DefinedType, PrimitiveType, Type},
 };
 
-use super::{statements::block::BlockStmt, Stmt};
+#[derive(Debug, Clone)]
+pub struct StructType {
+    pub name: String,
+    pub members: Vec<(Type, String)>,
+}
+
+impl StructType {
+    pub fn new(name: String, members: Vec<(Type, String)>) -> Self {
+        // TODO: detect member name confliction
+
+        Self { name, members }
+    }
+}
 
 #[derive(Debug)]
 pub enum Globals {
@@ -47,9 +63,9 @@ impl Globals {
 
                     if let TokenKind::LBrace = t.kind {
                         tokens.next();
-                        return Ok(Some(Self::TypeDef(TypeDef::Struct(consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appears(name, tokens)?))));
+                        return Ok(Some(Self::TypeDef(TypeDef::Struct(consume_struct_definition_body_from_lbrace_already_appeard_until_semicolon_appears(name, tokens)?))));
                     } else {
-                        base = Type::Incomplete(name)
+                        base = Type::Defined(DefinedType::Struct(name));
                     }
                 }
                 _ => {
@@ -225,7 +241,7 @@ pub fn consume_struct_and_name(
     Ok(name)
 }
 
-fn consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appears(
+fn consume_struct_definition_body_from_lbrace_already_appeard_until_semicolon_appears(
     name: String,
     tokens: &mut std::iter::Peekable<std::slice::Iter<'_, Token>>,
 ) -> Result<StructType, ParseError> {
@@ -245,7 +261,7 @@ fn consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appea
 
             matches(tokens.next(), vec![TokenKind::SemiColon])?;
 
-            return Ok(StructType::new(name, &members));
+            return Ok(StructType::new(name, members));
         } else {
             let base: Type = match t.kind {
                 TokenKind::Int => {
@@ -260,7 +276,9 @@ fn consume_struct_definition_body_from_lbrace_already_appeard_until_rbrace_appea
                     tokens.next();
                     Type::Primitive(PrimitiveType::Void)
                 }
-                TokenKind::Struct => Type::Incomplete(consume_struct_and_name(tokens)?),
+                TokenKind::Struct => {
+                    Type::Defined(DefinedType::Struct(consume_struct_and_name(tokens)?))
+                }
                 _ => {
                     return Err(ParseError::InvalidToken(
                         vec![
