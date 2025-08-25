@@ -5,7 +5,8 @@ pub mod loop_stmt;
 use crate::validator::{
     expressions::Exprs,
     statements::{branch_stmt::BranchStmt, loop_stmt::LoopStmt},
-    Env, ExprTypeValidate, StmtTypeValidate, TypeComarison, TypeError,
+    types::TypeComarison,
+    Env, ExprTypeValidate, StmtTypeValidate, TypeError,
 };
 
 #[derive(Debug)]

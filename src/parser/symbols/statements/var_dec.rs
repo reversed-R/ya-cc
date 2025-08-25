@@ -1,7 +1,7 @@
 use crate::{
     lexer::token::{Token, TokenKind},
     parser::{matches, symbols::globals::consume_struct_and_name, Parse, ParseError},
-    validator::{DefinedType, PrimitiveType, Type},
+    validator::types::{DefinedType, PrimitiveType, Type},
 };
 
 #[derive(Debug, Clone)]

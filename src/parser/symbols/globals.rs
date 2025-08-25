@@ -9,7 +9,7 @@ use crate::{
         },
         Parse, ParseError,
     },
-    validator::{DefinedType, PrimitiveType, Type},
+    validator::types::{DefinedType, PrimitiveType, Type},
 };
 
 #[derive(Debug, Clone)]

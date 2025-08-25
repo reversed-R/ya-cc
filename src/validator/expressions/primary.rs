@@ -2,7 +2,8 @@ use crate::{
     parser::symbols::expressions::primary,
     validator::{
         expressions::{FnCall, Literal, Primary},
-        Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
+        types::TypeComarison,
+        Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
 

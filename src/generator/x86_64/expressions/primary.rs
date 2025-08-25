@@ -8,7 +8,8 @@ use crate::{
     },
     validator::{
         expressions::{Exprs, Literal, Primary},
-        Type, VarAddr,
+        types::Type,
+        VarAddr,
     },
 };
 

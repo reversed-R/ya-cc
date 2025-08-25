@@ -2,7 +2,8 @@ use crate::{
     parser::symbols::expressions::arithmetic,
     validator::{
         expressions::{BinOperator, Binary, Exprs, Literal, Primary},
-        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, TypeComarison, TypeError,
+        types::TypeComarison,
+        DefinedType, Env, ExprTypeValidate, PrimitiveType, Type, TypeError,
     },
 };
 
