@@ -9,7 +9,6 @@ pub enum Stmt {
     Return(Exprs),
     Branch(Box<BranchStmt>),
     Loop(Box<LoopStmt>),
-    VarDec, // in codegen, variable declaration statement is nothing to do
 }
 
 #[derive(Debug)]

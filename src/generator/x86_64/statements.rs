@@ -27,9 +27,6 @@ impl LocalGenerate for Stmt {
             Self::Loop(loop_stmt) => {
                 loop_stmt.generate(env);
             }
-            Self::VarDec => {
-                //nothing to do
-            }
         }
     }
 }
